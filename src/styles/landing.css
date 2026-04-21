@@ -1,0 +1,178 @@
+/* ─── LANDING PAGE ─── */
+
+/* .public-nav styles moved to globals.css (shared across routes) */
+
+/* ─── LANDING WRAPPER ─── */
+.landing {
+   padding-top: 56px;
+   min-height: 100vh;
+}
+
+/* ─── HERO ─── */
+.landing-hero {
+   position: relative;
+   padding: 120px 5vw 80px;
+   text-align: center;
+   overflow: hidden;
+}
+.landing-hero::before {
+   content: "";
+   position: absolute;
+   width: 800px;
+   height: 800px;
+   top: -300px;
+   left: 50%;
+   transform: translateX(-50%);
+   background: radial-gradient(
+      circle,
+      rgba(59, 130, 246, 0.15) 0%,
+      transparent 60%
+   );
+   pointer-events: none;
+   z-index: 0;
+}
+.landing-hero > * {
+   position: relative;
+   z-index: 1;
+}
+.landing-hero .eyebrow {
+   display: inline-block;
+   padding: 6px 14px;
+   border: 1px solid var(--border2);
+   border-radius: 999px;
+   font-size: 12px;
+   color: var(--text-dim);
+   margin-bottom: 24px;
+   letter-spacing: 0.5px;
+}
+.landing-hero h1 {
+   font-size: clamp(40px, 6vw, 72px);
+   font-weight: 700;
+   letter-spacing: -1.5px;
+   line-height: 1.1;
+   margin-bottom: 20px;
+   background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+   -webkit-background-clip: text;
+   -webkit-text-fill-color: transparent;
+   background-clip: text;
+}
+.landing-hero .tagline {
+   font-size: clamp(16px, 2vw, 20px);
+   color: var(--text-dim);
+   max-width: 640px;
+   margin: 0 auto 36px;
+   line-height: 1.6;
+}
+.landing-hero .cta-row {
+   display: flex;
+   gap: 12px;
+   justify-content: center;
+   flex-wrap: wrap;
+}
+
+/* ─── ABOUT ─── */
+.landing-about {
+   padding: 40px 5vw 80px;
+   max-width: 780px;
+   margin: 0 auto;
+   text-align: center;
+}
+.landing-about h2 {
+   font-size: 28px;
+   font-weight: 600;
+   margin-bottom: 16px;
+   letter-spacing: -0.5px;
+}
+.landing-about p {
+   color: var(--text-dim);
+   font-size: 16px;
+   line-height: 1.8;
+}
+
+/* ─── FEATURES ─── */
+.landing-features {
+   padding: 60px 5vw 100px;
+   max-width: 1100px;
+   margin: 0 auto;
+}
+.landing-features .section-title {
+   text-align: center;
+   font-size: 28px;
+   font-weight: 600;
+   margin-bottom: 12px;
+   letter-spacing: -0.5px;
+}
+.landing-features .section-sub {
+   text-align: center;
+   color: var(--text-muted);
+   font-size: 14px;
+   margin-bottom: 48px;
+}
+.feature-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+   gap: 20px;
+}
+.feature-card {
+   position: relative;
+   padding: 28px 24px;
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: var(--radius);
+   transition:
+      border-color 0.2s,
+      transform 0.15s;
+}
+.feature-card:hover {
+   border-color: var(--border2);
+   transform: translateY(-2px);
+}
+.feature-card .icon {
+   display: inline-flex;
+   width: 40px;
+   height: 40px;
+   align-items: center;
+   justify-content: center;
+   background: rgba(59, 130, 246, 0.12);
+   color: var(--accent);
+   border-radius: var(--radius-sm);
+   font-size: 20px;
+   margin-bottom: 16px;
+}
+.feature-card h3 {
+   font-size: 16px;
+   font-weight: 600;
+   margin-bottom: 8px;
+   color: var(--text);
+}
+.feature-card p {
+   font-size: 14px;
+   color: var(--text-dim);
+   line-height: 1.6;
+}
+.feature-card .badge {
+   position: absolute;
+   top: 16px;
+   right: 16px;
+   padding: 3px 8px;
+   font-size: 10px;
+   font-weight: 500;
+   letter-spacing: 0.5px;
+   border-radius: 999px;
+   background: rgba(251, 191, 36, 0.1);
+   color: var(--gold);
+   border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+/* ─── FOOTER ─── */
+.landing-footer {
+   padding: 32px 5vw;
+   border-top: 1px solid var(--border);
+   text-align: center;
+   font-size: 13px;
+   color: var(--text-muted);
+}
+.landing-footer .brand {
+   color: var(--text);
+   font-weight: 600;
+}

@@ -1,26 +1,189 @@
-@import "tailwindcss";
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* ─── DESIGN TOKENS (shared across all pages) ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+   --bg: #14161c;
+   --bg2: #1e2128;
+   --bg3: #2a2d36;
+   --border: rgba(255, 255, 255, 0.1);
+   --border2: rgba(255, 255, 255, 0.18);
+   --text: #f4f4f5;
+   --text-dim: #b4b4bd;
+   --text-muted: #82828d;
+   --accent: #3b82f6;
+   --accent2: #8b5cf6;
+   --gold: #fbbf24;
+   --gold2: #f59e0b;
+   --teal: #2dd4bf;
+   --rose: #f472b6;
+   --green: #10b981;
+   --radius: 12px;
+   --radius-sm: 8px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+*,
+*::before,
+*::after {
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+   scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+   background: var(--bg);
+   color: var(--text);
+   font-family: var(--font-inter), var(--font-sarabun), sans-serif;
+   font-size: 15px;
+   line-height: 1.7;
+   overflow-x: hidden;
+   min-height: 100vh;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar {
+   width: 5px;
+}
+::-webkit-scrollbar-track {
+   background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+   background: #2d3748;
+   border-radius: 4px;
+}
+
+/* ─── PUBLIC NAVBAR (shared across all public routes) ─── */
+.public-nav {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   z-index: 200;
+   background: rgba(38, 42, 52, 0.88);
+   backdrop-filter: blur(14px);
+   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+   padding: 0 5vw;
+   height: 56px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+}
+.public-nav .nav-brand {
+   font-weight: 600;
+   font-size: 15px;
+   color: var(--text);
+   letter-spacing: -0.3px;
+   text-decoration: none;
+}
+.public-nav .nav-brand .dot {
+   color: var(--accent2);
+}
+.public-nav .nav-links {
+   display: flex;
+   gap: 28px;
+   list-style: none;
+}
+.public-nav .nav-links a {
+   color: #e4e4e7;
+   text-decoration: none;
+   font-size: 14px;
+   font-weight: 500;
+   transition: color 0.2s;
+}
+.public-nav .nav-links a:hover {
+   color: #fff;
+}
+@media (max-width: 768px) {
+   .public-nav {
+      padding: 0 4vw;
+   }
+}
+
+/* ─── SHARED FORM UTILITIES ─── */
+.form-group {
+   margin-bottom: 20px;
+}
+
+.form-group label {
+   display: block;
+   font-size: 13px;
+   color: var(--text-dim);
+   margin-bottom: 8px;
+   font-weight: 500;
+}
+
+.form-input {
+   width: 100%;
+   padding: 12px 16px;
+   background: rgba(0, 0, 0, 0.2);
+   border: 1px solid var(--border);
+   border-radius: var(--radius-sm);
+   color: var(--text);
+   font-family: inherit;
+   font-size: 14px;
+   transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+}
+
+.form-input:focus {
+   outline: none;
+   border-color: var(--accent);
+   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* ─── SHARED BUTTON UTILITIES ─── */
+.btn-primary {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+   padding: 11px 24px;
+   background: var(--accent);
+   color: #fff;
+   border: none;
+   border-radius: var(--radius-sm);
+   font-size: 14px;
+   font-weight: 600;
+   text-decoration: none;
+   cursor: pointer;
+   transition:
+      background 0.2s,
+      transform 0.15s;
+   font-family: inherit;
+}
+.btn-primary:hover {
+   background: var(--accent2);
+   transform: translateY(-1px);
+}
+.btn-primary:disabled {
+   opacity: 0.7;
+   cursor: not-allowed;
+   transform: none;
+}
+
+.btn-ghost {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+   padding: 11px 24px;
+   background: transparent;
+   color: var(--text-dim);
+   border: 1px solid var(--border2);
+   border-radius: var(--radius-sm);
+   font-size: 14px;
+   font-weight: 500;
+   text-decoration: none;
+   cursor: pointer;
+   transition: all 0.2s;
+   font-family: inherit;
+}
+.btn-ghost:hover {
+   border-color: var(--text-dim);
+   color: var(--text);
 }
