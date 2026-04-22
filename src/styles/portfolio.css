@@ -1,3 +1,9 @@
+/* ─── PORTFOLIO THEME: gold-tinted borders ─── */
+:root {
+   --border: rgba(251, 191, 36, 0.22);
+   --border2: rgba(251, 191, 36, 0.4);
+}
+
 /* ─── SECTION NAV (sticky under PublicNavbar inside /portfolio) ─── */
 .section-nav {
    position: sticky;
@@ -181,6 +187,9 @@
    justify-content: center;
    font-size: 5rem;
 }
+.hero-avatar-fallback {
+   color: var(--text-muted);
+}
 .hero-avatar::before {
    content: "";
    position: absolute;
@@ -330,27 +339,80 @@ section {
    font-weight: 500;
    color: var(--text);
 }
-.skill-dots {
+.skills-legend {
    display: flex;
-   gap: 4px;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 8px 14px;
+   margin: 0 0 28px;
+   padding: 12px 16px;
+   background: var(--bg2);
+   border: 1px dashed var(--border2);
+   border-radius: var(--radius-sm);
+   font-size: 12px;
+   color: var(--text-dim);
 }
-.skill-dot {
-   width: 8px;
-   height: 8px;
+.skills-legend-label {
+   font-weight: 600;
+   color: var(--text);
+   margin-right: 4px;
+}
+.skills-legend-item {
+   display: inline-flex;
+   align-items: center;
+   gap: 6px;
+}
+.skills-legend-num {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   width: 18px;
+   height: 18px;
    border-radius: 50%;
-   background: var(--border2);
+   background: rgba(255, 255, 255, 0.06);
+   border: 1px solid var(--border2);
+   font-size: 11px;
+   font-weight: 600;
+   color: var(--text);
 }
-.skill-dot.filled {
-   background: var(--accent2);
+.skills-legend-item[data-level="5"] .skills-legend-num {
+   background: rgba(59, 130, 246, 0.15);
+   border-color: var(--accent);
+   color: var(--accent);
 }
-.skill-dot.filled.gold {
-   background: var(--gold);
+
+.skill-level {
+   font-size: 12px;
+   font-weight: 500;
+   letter-spacing: 0.2px;
+   padding: 3px 10px;
+   border-radius: 999px;
+   background: rgba(255, 255, 255, 0.04);
+   border: 1px solid var(--border2);
+   color: var(--text-dim);
+   white-space: nowrap;
 }
-.skill-dot.filled.teal {
-   background: var(--teal);
+.skill-level[data-level="5"] {
+   font-weight: 600;
+   color: var(--text);
 }
-.skill-dot.filled.rose {
-   background: var(--rose);
+.skill-level.gold[data-level="4"],
+.skill-level.gold[data-level="5"] {
+   background: rgba(251, 191, 36, 0.08);
+   border-color: rgba(251, 191, 36, 0.28);
+   color: var(--gold);
+}
+.skill-level.teal[data-level="4"],
+.skill-level.teal[data-level="5"] {
+   background: rgba(45, 212, 191, 0.08);
+   border-color: rgba(45, 212, 191, 0.28);
+   color: var(--teal);
+}
+.skill-level.rose[data-level="4"],
+.skill-level.rose[data-level="5"] {
+   background: rgba(244, 114, 182, 0.08);
+   border-color: rgba(244, 114, 182, 0.28);
+   color: var(--rose);
 }
 
 /* ─── EXPERIENCE SECTION ─── */

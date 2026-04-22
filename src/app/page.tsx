@@ -8,27 +8,68 @@ export const metadata = {
       "แพลตฟอร์มบริหารโปรเจกต์สำหรับคนรับงาน ทีมเล็ก และฟรีแลนซ์ รวมทุกเรื่องของโปรเจกต์ไว้ในที่เดียว",
 };
 
+type FeatureIconProps = { children: React.ReactNode };
+const FeatureIcon = ({ children }: FeatureIconProps) => (
+   <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+   >
+      {children}
+   </svg>
+);
+
 const features = [
    {
-      icon: "📥",
+      icon: (
+         <FeatureIcon>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+         </FeatureIcon>
+      ),
       title: "Project Intake",
       desc: "บันทึกงานที่รับเข้ามา ชื่อลูกค้า deadline รายละเอียด มูลค่างาน ครบในที่เดียว",
       soon: false,
    },
    {
-      icon: "👥",
+      icon: (
+         <FeatureIcon>
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+         </FeatureIcon>
+      ),
       title: "Team & Roles",
       desc: "จัดการสมาชิกในโปรเจกต์ กำหนดบทบาทของแต่ละคนให้ชัดเจน",
       soon: true,
    },
    {
-      icon: "✅",
+      icon: (
+         <FeatureIcon>
+            <polyline points="20 6 9 17 4 12" />
+         </FeatureIcon>
+      ),
       title: "Tasks & Progress",
       desc: "มอบหมายงานย่อย ติดตามความคืบหน้า ดูว่าเป็นไปตามแผนไหม",
       soon: true,
    },
    {
-      icon: "🎨",
+      icon: (
+         <FeatureIcon>
+            <path d="M12 19l7-7 3 3-7 7-3-3z" />
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+            <path d="M2 2l7.586 7.586" />
+            <circle cx="11" cy="11" r="2" />
+         </FeatureIcon>
+      ),
       title: "Portfolio",
       desc: "เมื่อโปรเจกต์จบ กลายเป็นผลงานในโปรไฟล์ได้ทันที ไม่ต้องเขียนซ้ำ",
       soon: false,
