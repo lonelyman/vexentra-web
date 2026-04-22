@@ -50,7 +50,7 @@ export async function loginAction(_prevState: any, formData: FormData) {
    }
 
    // Redirect after setting cookie (must be outside try-catch)
-   redirect("/admin");
+   redirect("/workspace/projects");
 }
 
 export async function logoutAction() {
