@@ -24,11 +24,11 @@ export default function ProfileForm({
    }, [state]);
 
    return (
-      <div className="admin-card">
-         <h2 className="admin-card-title">แก้ไขข้อมูลโปรไฟล์ (Profile)</h2>
+      <div className="ws-card">
+         <h2 className="ws-card-title">แก้ไขข้อมูลโปรไฟล์ (Profile)</h2>
 
          {state?.error && (
-            <div className="toast-message toast-error">
+            <div className="ws-toast ws-toast-error">
                <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -48,7 +48,7 @@ export default function ProfileForm({
          )}
 
          {showSuccess && (
-            <div className="toast-message toast-success">
+            <div className="ws-toast ws-toast-success">
                <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -68,7 +68,7 @@ export default function ProfileForm({
          )}
 
          <form action={formAction}>
-            <div className="admin-form-row">
+            <div className="ws-form-row">
                <div className="form-group">
                   <label htmlFor="display_name">
                      ชื่อที่แสดง (Display Name)

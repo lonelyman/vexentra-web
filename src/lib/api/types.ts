@@ -76,11 +76,34 @@ export interface FullProfileData {
 
 // ─── Workspace / Project Management ───────────────────────────────────────────
 
+export interface UserListItem {
+   id: string;
+   person_id: string;
+   username: string;
+   email: string;
+   role: string;
+   status: string;
+   is_email_verified: boolean;
+   last_login_at: string | null;
+   created_at: string;
+}
+
+export interface UserListResult {
+   items: UserListItem[];
+   pagination: {
+      total_records: number;
+      total_pages: number;
+      current_page: number;
+      page_size: number;
+   };
+}
+
 export interface UserMe {
    id: string;
    person_id: string;
    username: string;
    email: string;
+   role: string;
    status: string;
    is_email_verified: boolean;
    last_login_at: string | null;
