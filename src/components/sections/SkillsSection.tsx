@@ -1,5 +1,13 @@
 import { Skill } from "@/lib/api";
 
+const PROFICIENCY_LABELS: Record<number, string> = {
+   1: "กำลังเรียนรู้",
+   2: "พอใช้งานได้",
+   3: "ใช้งานคล่อง",
+   4: "ชำนาญ",
+   5: "เชี่ยวชาญ",
+};
+
 export default function SkillsSection({ skills }: { skills: Skill[] }) {
    // Group skills by category
    const categories = skills.reduce(
@@ -19,6 +27,20 @@ export default function SkillsSection({ skills }: { skills: Skill[] }) {
             ทักษะที่สะสมมาจากประสบการณ์จริง ผ่านโปรเจกต์หลากหลายประเภท
          </p>
 
+         <div className="skills-legend" aria-label="ระดับความชำนาญ">
+            <span className="skills-legend-label">ระดับความชำนาญ:</span>
+            {[1, 2, 3, 4, 5].map((lv) => (
+               <span
+                  key={lv}
+                  className="skills-legend-item"
+                  data-level={lv}
+               >
+                  <span className="skills-legend-num">{lv}</span>
+                  {PROFICIENCY_LABELS[lv]}
+               </span>
+            ))}
+         </div>
+
          <div className="skills-layout">
             {Object.entries(categories).map(([category, catSkills]) => (
                <div key={category} className="skill-category-card">
@@ -26,30 +48,27 @@ export default function SkillsSection({ skills }: { skills: Skill[] }) {
 
                   {catSkills
                      .sort((a, b) => a.sort_order - b.sort_order)
-                     .map((skill) => (
-                        <div key={skill.id} className="skill-item">
-                           <span className="skill-name">{skill.name}</span>
-                           <div className="skill-dots">
-                              {[1, 2, 3, 4, 5].map((level) => {
-                                 let colorClass = "";
-                                 if (category === "backend")
-                                    colorClass = "gold";
-                                 else if (category === "frontend")
-                                    colorClass = "teal";
-                                 else if (category === "devops")
-                                    colorClass = "rose";
+                     .map((skill) => {
+                        let colorClass = "";
+                        if (category === "backend") colorClass = "gold";
+                        else if (category === "frontend") colorClass = "teal";
+                        else if (category === "devops") colorClass = "rose";
 
-                                 const isFilled = level <= skill.proficiency;
-                                 return (
-                                    <div
-                                       key={level}
-                                       className={`skill-dot ${isFilled ? "filled" : ""} ${isFilled ? colorClass : ""}`}
-                                    />
-                                 );
-                              })}
+                        const label =
+                           PROFICIENCY_LABELS[skill.proficiency] ?? "";
+
+                        return (
+                           <div key={skill.id} className="skill-item">
+                              <span className="skill-name">{skill.name}</span>
+                              <span
+                                 className={`skill-level ${colorClass}`}
+                                 data-level={skill.proficiency}
+                              >
+                                 {label}
+                              </span>
                            </div>
-                        </div>
-                     ))}
+                        );
+                     })}
                </div>
             ))}
          </div>
