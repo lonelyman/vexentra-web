@@ -170,3 +170,30 @@ export interface Member {
    added_by_user_id: string;
    joined_at: string;
 }
+
+// ─── Dashboard ─────────────────────────────────────────────────────────────────
+
+export interface DashboardStatusCount {
+   status: ProjectStatus;
+   count: number;
+}
+
+export interface DashboardDeadlineProject {
+   id: string;
+   project_code: string;
+   name: string;
+   status: ProjectStatus;
+   deadline_at: string;
+}
+
+export interface DashboardPL {
+   income: string;
+   expense: string;
+   net: string;
+}
+
+export interface DashboardStats {
+   status_counts: DashboardStatusCount[];
+   upcoming_deadlines: DashboardDeadlineProject[];
+   pl: DashboardPL;
+}

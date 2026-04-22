@@ -274,16 +274,25 @@ export default async function ProjectDetailPage({
                </div>
             )}
 
-            {/* Table header + create button */}
+            {/* Table header + actions */}
             <div className="ws-page-header" style={{ marginBottom: 16 }}>
                <p className="ws-page-subtitle">
                   {pagination?.total_records ?? 0} รายการ
                </p>
-               <CreateTransactionModal
-                  projectId={project.id}
-                  categories={categories}
-                  disabled={isClosed}
-               />
+               <div style={{ display: "flex", gap: 8 }}>
+                  <a
+                     href={`/workspace/projects/${code}/export`}
+                     className="ws-btn-ghost"
+                     download
+                  >
+                     ↓ Export CSV
+                  </a>
+                  <CreateTransactionModal
+                     projectId={project.id}
+                     categories={categories}
+                     disabled={isClosed}
+                  />
+               </div>
             </div>
 
             <div className="ws-table-wrap">

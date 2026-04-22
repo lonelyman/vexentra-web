@@ -24,6 +24,27 @@ export default function WorkspaceSidebar({ username, email }: Props) {
          </div>
 
          <nav className="ws-sidebar-nav">
+            <span className="ws-sidebar-section-label">ภาพรวม</span>
+            <Link
+               href="/workspace"
+               className={`ws-nav-item ${pathname === "/workspace" ? "active" : ""}`}
+            >
+               <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+               >
+                  <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zm0 9.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zm9.75-9.75A2.25 2.25 0 0115.75 3.75H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zm0 9.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
+                  />
+               </svg>
+               Dashboard
+            </Link>
+
             <span className="ws-sidebar-section-label">โปรเจกต์</span>
             <Link
                href="/workspace/projects"

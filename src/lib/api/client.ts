@@ -11,6 +11,7 @@ import type {
    TransactionListResult,
    ProjectTotals,
    Member,
+   DashboardStats,
 } from "./types";
 
 const API_URL =
@@ -145,6 +146,18 @@ export async function fetchMembers(
    if (!res.ok) return { data: null, status: res.status };
    const json = await res.json();
    return { data: json.data?.items ?? json.data ?? null, status: res.status };
+}
+
+export async function fetchDashboardStats(
+   token: string,
+): Promise<{ data: DashboardStats | null; status: number }> {
+   const res = await fetch(`${INTERNAL_URL}/dashboard/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
 }
 
 export async function fetchTxCategories(
