@@ -171,6 +171,30 @@ export interface Member {
    joined_at: string;
 }
 
+// ─── Tasks ────────────────────────────────────────────────────────────────────
+
+export type TaskStatus = "todo" | "in_progress" | "done" | "cancelled";
+export type TaskPriority = "low" | "medium" | "high";
+
+export interface Task {
+   id: string;
+   project_id: string;
+   title: string;
+   description: string | null;
+   status: TaskStatus;
+   priority: TaskPriority;
+   assigned_person_id: string | null;
+   due_date: string | null; // "YYYY-MM-DD"
+   created_by_user_id: string;
+   created_at: string;
+   updated_at: string;
+}
+
+export interface TaskListResult {
+   items: Task[];
+   pagination: Pagination;
+}
+
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
 
 export interface DashboardStatusCount {

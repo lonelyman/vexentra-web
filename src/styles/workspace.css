@@ -848,6 +848,141 @@
    border-radius: 6px;
 }
 
+/* ─── Task Cards ───────────────────────────────────────────────────────────── */
+
+.ws-task-group {
+   margin-bottom: 28px;
+}
+
+.ws-task-group-header {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   font-size: 12px;
+   font-weight: 700;
+   letter-spacing: 0.07em;
+   text-transform: uppercase;
+   color: var(--text-dim);
+   padding: 0 4px;
+   margin-bottom: 8px;
+}
+
+.ws-task-group-count {
+   background: var(--bg3);
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   padding: 1px 7px;
+   font-size: 11px;
+}
+
+.ws-task-list {
+   display: flex;
+   flex-direction: column;
+   gap: 6px;
+}
+
+.ws-task-card {
+   display: flex;
+   align-items: flex-start;
+   justify-content: space-between;
+   gap: 12px;
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   padding: 12px 14px;
+   transition: border-color 0.15s;
+}
+
+.ws-task-card:hover {
+   border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ws-task-card-left {
+   display: flex;
+   align-items: flex-start;
+   gap: 12px;
+   flex: 1;
+   min-width: 0;
+}
+
+.ws-task-status-btn {
+   width: 22px;
+   height: 22px;
+   flex-shrink: 0;
+   margin-top: 1px;
+   background: none;
+   border: 2px solid currentColor;
+   border-radius: 50%;
+   font-size: 11px;
+   font-weight: 700;
+   cursor: pointer;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   transition: background 0.15s, opacity 0.15s;
+   padding: 0;
+   line-height: 1;
+}
+
+.ws-task-status-btn:hover:not(:disabled) {
+   background: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.ws-task-status-btn:disabled {
+   cursor: default;
+   opacity: 0.6;
+}
+
+.ws-task-body {
+   flex: 1;
+   min-width: 0;
+}
+
+.ws-task-title {
+   font-size: 14px;
+   font-weight: 500;
+   color: var(--text);
+   line-height: 1.4;
+}
+
+.ws-task-desc {
+   font-size: 12px;
+   color: var(--text-dim);
+   margin-top: 3px;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+
+.ws-task-meta {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   margin-top: 6px;
+}
+
+.ws-task-priority {
+   font-size: 11px;
+   font-weight: 600;
+}
+
+.ws-task-due {
+   font-size: 11px;
+}
+
+.ws-task-actions {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   flex-shrink: 0;
+}
+
+.ws-task-status-label {
+   font-size: 11px;
+   font-weight: 600;
+   white-space: nowrap;
+}
+
 /* ─── Amount colors in table ───────────────────────────────────────────────── */
 
 .ws-amount-income {

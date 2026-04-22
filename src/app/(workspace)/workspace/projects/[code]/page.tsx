@@ -7,11 +7,14 @@ import {
    fetchTransactionSummary,
    fetchMembers,
    fetchTxCategories,
+   fetchTasks,
 } from "@/lib/api/client";
-import type { ProjectStatus, Transaction, Member } from "@/lib/api/types";
+import type { ProjectStatus, Transaction, Member, Task, TaskStatus } from "@/lib/api/types";
 import CreateTransactionModal from "@/components/workspace/CreateTransactionModal";
 import AddMemberModal from "@/components/workspace/AddMemberModal";
 import MemberRemoveButton from "@/components/workspace/MemberActions";
+import CreateTaskModal from "@/components/workspace/CreateTaskModal";
+import TaskCard from "@/components/workspace/TaskCard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,9 +52,10 @@ function formatAmount(amount: string): string {
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
-type Tab = "overview" | "transactions" | "members";
+type Tab = "overview" | "transactions" | "members" | "tasks";
 const TABS: { id: Tab; label: string }[] = [
    { id: "overview", label: "ภาพรวม" },
+   { id: "tasks", label: "งาน" },
    { id: "transactions", label: "รายการรับ-จ่าย" },
    { id: "members", label: "สมาชิก" },
 ];
@@ -379,6 +383,90 @@ export default async function ProjectDetailPage({
                   </>
                )}
             </div>
+         </main>
+      );
+   }
+
+   // ─── Tasks Tab ────────────────────────────────────────────────────────────
+
+   if (tab === "tasks") {
+      const { data: taskData } = await fetchTasks(token, project.id, { limit: 100 });
+      const tasks = taskData?.items ?? [];
+
+      const STATUS_ORDER: TaskStatus[] = ["in_progress", "todo", "done", "cancelled"];
+      const STATUS_LABEL_MAP: Record<TaskStatus, string> = {
+         in_progress: "กำลังทำ",
+         todo: "ยังไม่เริ่ม",
+         done: "เสร็จแล้ว",
+         cancelled: "ยกเลิก",
+      };
+
+      // Group tasks by status
+      const grouped = STATUS_ORDER.reduce<Record<string, Task[]>>((acc, s) => {
+         acc[s] = tasks.filter((t: Task) => t.status === s);
+         return acc;
+      }, {});
+
+      const activeTasks = tasks.filter(
+         (t: Task) => t.status !== "done" && t.status !== "cancelled",
+      ).length;
+
+      return (
+         <main className="ws-page">
+            <Link href="/workspace/projects" className="ws-back-link">
+               ← กลับรายการโปรเจกต์
+            </Link>
+            <div className="ws-page-header">
+               <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                     <span className="ws-project-code">{project.project_code}</span>
+                     <StatusBadge status={project.status} />
+                  </div>
+                  <h1 className="ws-page-title">{project.name}</h1>
+               </div>
+            </div>
+            <nav className="ws-tabs">
+               {TABS.map((t) => (
+                  <Link key={t.id} href={tabUrl(t.id)} className={`ws-tab ${tab === t.id ? "active" : ""}`}>
+                     {t.label}
+                  </Link>
+               ))}
+            </nav>
+
+            <div className="ws-page-header" style={{ marginBottom: 20 }}>
+               <p className="ws-page-subtitle">
+                  {tasks.length} งาน · {activeTasks} รายการที่ยังค้างอยู่
+               </p>
+               <CreateTaskModal projectId={project.id} />
+            </div>
+
+            {tasks.length === 0 ? (
+               <div className="ws-table-wrap">
+                  <div className="ws-empty">
+                     <div className="ws-empty-icon">✅</div>
+                     <div className="ws-empty-title">ยังไม่มีงาน</div>
+                     <div className="ws-empty-desc">กดปุ่ม &quot;สร้างงาน&quot; เพื่อเพิ่มงานแรก</div>
+                  </div>
+               </div>
+            ) : (
+               STATUS_ORDER.map((status) => {
+                  const group = grouped[status];
+                  if (group.length === 0) return null;
+                  return (
+                     <div key={status} className="ws-task-group">
+                        <div className="ws-task-group-header">
+                           {STATUS_LABEL_MAP[status]}
+                           <span className="ws-task-group-count">{group.length}</span>
+                        </div>
+                        <div className="ws-task-list">
+                           {group.map((t: Task) => (
+                              <TaskCard key={t.id} task={t} projectId={project.id} />
+                           ))}
+                        </div>
+                     </div>
+                  );
+               })
+            )}
          </main>
       );
    }

@@ -12,6 +12,7 @@ import type {
    ProjectTotals,
    Member,
    DashboardStats,
+   TaskListResult,
 } from "./types";
 
 const API_URL =
@@ -146,6 +147,25 @@ export async function fetchMembers(
    if (!res.ok) return { data: null, status: res.status };
    const json = await res.json();
    return { data: json.data?.items ?? json.data ?? null, status: res.status };
+}
+
+export async function fetchTasks(
+   token: string,
+   projectId: string,
+   params?: { status?: string; page?: number; limit?: number },
+): Promise<{ data: TaskListResult | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/projects/${projectId}/tasks`);
+   if (params?.status) url.searchParams.set("status", params.status);
+   if (params?.page) url.searchParams.set("page", String(params.page));
+   if (params?.limit) url.searchParams.set("limit", String(params.limit));
+
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
 }
 
 export async function fetchDashboardStats(
