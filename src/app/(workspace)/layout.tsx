@@ -1,6 +1,5 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { fetchMe } from "@/lib/api/client";
+import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
 import WorkspaceSidebar from "@/components/workspace/WorkspaceSidebar";
 import "@/styles/workspace.css";
 
@@ -9,20 +8,14 @@ export default async function WorkspaceLayout({
 }: {
    children: React.ReactNode;
 }) {
-   const token = (await cookies()).get("token")?.value;
-   if (!token) redirect("/login");
+   const token = await requireAuth("/workspace/projects");
 
    const { data: me, status } = await fetchMe(token);
-   if (!me) {
-      if (status === 401) {
-         redirect("/api/refresh-session?redirect=/workspace/projects");
-      }
-      redirect("/api/clear-session");
-   }
+   if (!me) handleAuthError(status, "/workspace/projects");
 
    return (
       <div className="ws-layout">
-         <WorkspaceSidebar username={me.username} email={me.email} />
+         <WorkspaceSidebar username={me.username} email={me.email} role={me.role} />
          <div className="ws-content">{children}</div>
       </div>
    );

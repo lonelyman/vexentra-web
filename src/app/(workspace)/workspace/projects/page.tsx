@@ -168,17 +168,27 @@ export default async function ProjectsPage({
                         {items.map((p: Project) => (
                            <tr key={p.id}>
                               <td>
-                                 <span className="ws-project-code">
-                                    {p.project_code}
-                                 </span>
+                                 <Link
+                                    href={`/workspace/projects/${p.project_code.toLowerCase()}`}
+                                    style={{ textDecoration: "none" }}
+                                 >
+                                    <span className="ws-project-code">
+                                       {p.project_code}
+                                    </span>
+                                 </Link>
                               </td>
                               <td>
-                                 <div className="ws-project-name">{p.name}</div>
-                                 {p.description && (
-                                    <div className="ws-project-desc">
-                                       {p.description}
-                                    </div>
-                                 )}
+                                 <Link
+                                    href={`/workspace/projects/${p.project_code.toLowerCase()}`}
+                                    style={{ textDecoration: "none" }}
+                                 >
+                                    <div className="ws-project-name">{p.name}</div>
+                                    {p.description && (
+                                       <div className="ws-project-desc">
+                                          {p.description}
+                                       </div>
+                                    )}
+                                 </Link>
                               </td>
                               <td>
                                  <StatusBadge status={p.status} />
