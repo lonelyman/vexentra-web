@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default async function LoginPage() {
    const token = (await cookies()).get("token")?.value;
-   if (token) redirect("/admin");
+   if (token) redirect("/workspace/projects");
 
    return (
       <main className="login-container">

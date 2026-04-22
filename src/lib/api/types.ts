@@ -73,3 +73,55 @@ export interface FullProfileData {
    experiences: Experience[];
    portfolio: PortfolioItem[];
 }
+
+// ─── Workspace / Project Management ───────────────────────────────────────────
+
+export interface UserMe {
+   id: string;
+   person_id: string;
+   username: string;
+   email: string;
+   status: string;
+   is_email_verified: boolean;
+   last_login_at: string | null;
+   created_at: string;
+}
+
+export type ProjectStatus =
+   | "draft"
+   | "planned"
+   | "bidding"
+   | "active"
+   | "on_hold"
+   | "closed";
+
+export interface Project {
+   id: string;
+   project_code: string;
+   name: string;
+   description: string | null;
+   status: ProjectStatus;
+   client_person_id: string | null;
+   client_name_raw: string | null;
+   scheduled_start_at: string | null;
+   deadline_at: string | null;
+   activated_at: string | null;
+   closed_at: string | null;
+   closure_reason: string | null;
+   created_by_user_id: string;
+   created_at: string;
+   updated_at: string;
+}
+
+export interface Pagination {
+   total_records: number;
+   total_pages: number;
+   current_page: number;
+   per_page: number;
+   has_more: boolean;
+}
+
+export interface ProjectListResult {
+   items: Project[];
+   pagination: Pagination;
+}
