@@ -5,7 +5,12 @@ import type {
    FullProfileData,
    SocialPlatform,
    UserMe,
+   Project,
    ProjectListResult,
+   TransactionCategory,
+   TransactionListResult,
+   ProjectTotals,
+   Member,
 } from "./types";
 
 const API_URL =
@@ -61,6 +66,19 @@ export async function fetchMe(
    return { data: json.data ?? null, status: res.status };
 }
 
+export async function fetchProjectByCode(
+   token: string,
+   code: string,
+): Promise<{ data: Project | null; status: number }> {
+   const res = await fetch(
+      `${INTERNAL_URL}/projects/by-code/${encodeURIComponent(code)}`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+   );
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
 export async function fetchProjects(
    token: string,
    params?: {
@@ -83,4 +101,60 @@ export async function fetchProjects(
    if (!res.ok) return { data: null, status: res.status };
    const json = await res.json();
    return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchTransactions(
+   token: string,
+   projectId: string,
+   params?: { page?: number; limit?: number },
+): Promise<{ data: TransactionListResult | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/projects/${projectId}/transactions`);
+   if (params?.page) url.searchParams.set("page", String(params.page));
+   if (params?.limit) url.searchParams.set("limit", String(params.limit));
+
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchTransactionSummary(
+   token: string,
+   projectId: string,
+): Promise<{ data: ProjectTotals | null; status: number }> {
+   const res = await fetch(
+      `${INTERNAL_URL}/projects/${projectId}/transactions/summary`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+   );
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchMembers(
+   token: string,
+   projectId: string,
+): Promise<{ data: Member[] | null; status: number }> {
+   const res = await fetch(
+      `${INTERNAL_URL}/projects/${projectId}/members`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+   );
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data?.items ?? json.data ?? null, status: res.status };
+}
+
+export async function fetchTxCategories(
+   token: string,
+): Promise<{ data: TransactionCategory[] | null; status: number }> {
+   const res = await fetch(`${INTERNAL_URL}/tx-categories`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data?.items ?? json.data ?? null, status: res.status };
 }

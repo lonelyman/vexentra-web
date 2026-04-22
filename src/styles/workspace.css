@@ -598,3 +598,264 @@
    justify-content: flex-end;
    margin-top: 20px;
 }
+
+/* ─── Form Select (inside dialog) ─────────────────────────────────────────── */
+
+.ws-form-select {
+   width: 100%;
+   background: var(--bg3);
+   border: 1px solid var(--border);
+   border-radius: 8px;
+   padding: 10px 14px;
+   font-size: 14px;
+   color: var(--text);
+   outline: none;
+   transition: border-color 0.15s;
+   font-family: inherit;
+   box-sizing: border-box;
+   cursor: pointer;
+}
+
+.ws-form-select:focus {
+   border-color: var(--accent);
+}
+
+/* ─── Back Link ────────────────────────────────────────────────────────────── */
+
+.ws-back-link {
+   display: inline-flex;
+   align-items: center;
+   gap: 6px;
+   font-size: 13px;
+   color: var(--text-dim);
+   text-decoration: none;
+   margin-bottom: 20px;
+   transition: color 0.15s;
+}
+
+.ws-back-link:hover {
+   color: var(--text);
+}
+
+/* ─── Tabs ─────────────────────────────────────────────────────────────────── */
+
+.ws-tabs {
+   display: flex;
+   gap: 0;
+   border-bottom: 1px solid var(--border);
+   margin-bottom: 28px;
+}
+
+.ws-tab {
+   padding: 10px 20px;
+   font-size: 14px;
+   font-weight: 500;
+   color: var(--text-dim);
+   text-decoration: none;
+   border-bottom: 2px solid transparent;
+   margin-bottom: -1px;
+   transition: color 0.15s, border-color 0.15s;
+   white-space: nowrap;
+}
+
+.ws-tab:hover {
+   color: var(--text);
+}
+
+.ws-tab.active {
+   color: var(--accent);
+   border-bottom-color: var(--accent);
+   font-weight: 600;
+}
+
+/* ─── Summary Cards (transaction totals) ──────────────────────────────────── */
+
+.ws-summary-grid {
+   display: grid;
+   grid-template-columns: repeat(3, 1fr);
+   gap: 14px;
+   margin-bottom: 24px;
+}
+
+.ws-summary-card {
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   padding: 16px 20px;
+}
+
+.ws-summary-label {
+   font-size: 12px;
+   font-weight: 600;
+   letter-spacing: 0.05em;
+   text-transform: uppercase;
+   color: var(--text-dim);
+   margin-bottom: 6px;
+}
+
+.ws-summary-amount {
+   font-size: 20px;
+   font-weight: 700;
+   letter-spacing: -0.5px;
+}
+
+.ws-summary-income {
+   color: var(--teal);
+}
+
+.ws-summary-expense {
+   color: #f87171;
+}
+
+.ws-summary-net-positive {
+   color: var(--teal);
+}
+
+.ws-summary-net-negative {
+   color: #f87171;
+}
+
+/* ─── Detail Info Grid (overview) ──────────────────────────────────────────── */
+
+.ws-detail-grid {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 14px;
+   margin-bottom: 24px;
+}
+
+.ws-detail-card {
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   padding: 18px 20px;
+}
+
+.ws-detail-card-full {
+   grid-column: 1 / -1;
+}
+
+.ws-detail-field-label {
+   font-size: 11px;
+   font-weight: 600;
+   letter-spacing: 0.07em;
+   text-transform: uppercase;
+   color: var(--text-dim);
+   margin-bottom: 4px;
+}
+
+.ws-detail-field-value {
+   font-size: 14px;
+   color: var(--text);
+   line-height: 1.5;
+}
+
+.ws-detail-field-value.muted {
+   color: var(--text-dim);
+   font-style: italic;
+}
+
+/* ─── Member List ──────────────────────────────────────────────────────────── */
+
+.ws-member-list {
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: 12px;
+   overflow: hidden;
+}
+
+.ws-member-row {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   padding: 14px 18px;
+   border-bottom: 1px solid var(--border);
+}
+
+.ws-member-row:last-child {
+   border-bottom: none;
+}
+
+.ws-member-avatar {
+   width: 34px;
+   height: 34px;
+   border-radius: 50%;
+   background: color-mix(in srgb, var(--accent) 20%, var(--bg3));
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 13px;
+   font-weight: 700;
+   color: var(--accent);
+   flex-shrink: 0;
+}
+
+.ws-member-info {
+   flex: 1;
+   min-width: 0;
+}
+
+.ws-member-id {
+   font-size: 12px;
+   font-family: "SF Mono", "Fira Code", monospace;
+   color: var(--text-dim);
+}
+
+.ws-member-badges {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+}
+
+.ws-lead-badge {
+   font-size: 11px;
+   font-weight: 700;
+   padding: 2px 7px;
+   border-radius: 10px;
+   background: color-mix(in srgb, var(--gold) 18%, transparent);
+   color: var(--gold);
+   letter-spacing: 0.04em;
+}
+
+.ws-member-actions {
+   display: flex;
+   gap: 6px;
+}
+
+.ws-btn-danger-ghost {
+   display: inline-flex;
+   align-items: center;
+   gap: 4px;
+   padding: 5px 10px;
+   background: transparent;
+   color: #f87171;
+   border: 1px solid rgba(248, 113, 113, 0.3);
+   border-radius: 6px;
+   font-size: 12px;
+   font-weight: 500;
+   cursor: pointer;
+   transition: background 0.15s;
+   white-space: nowrap;
+}
+
+.ws-btn-danger-ghost:hover {
+   background: rgba(248, 113, 113, 0.1);
+}
+
+.ws-btn-sm {
+   padding: 5px 10px;
+   font-size: 12px;
+   border-radius: 6px;
+}
+
+/* ─── Amount colors in table ───────────────────────────────────────────────── */
+
+.ws-amount-income {
+   color: var(--teal);
+   font-weight: 600;
+}
+
+.ws-amount-expense {
+   color: #f87171;
+   font-weight: 600;
+}
