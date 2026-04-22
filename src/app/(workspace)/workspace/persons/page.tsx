@@ -3,6 +3,7 @@ import { fetchUsers, fetchMe } from "@/lib/api/client";
 import { redirect } from "next/navigation";
 import type { UserListItem } from "@/lib/api/types";
 import Link from "next/link";
+import CreateUserModal from "@/components/workspace/CreateUserModal";
 
 export const metadata = { title: "พนักงานทั้งหมด — Vexentra" };
 
@@ -55,6 +56,7 @@ export default async function PersonsPage({
                </h1>
                <p className="ws-page-subtitle">รายชื่อผู้ใช้งานทั้งหมดในระบบ</p>
             </div>
+            <CreateUserModal />
          </div>
 
          <div className="ws-table-wrap">
@@ -68,6 +70,7 @@ export default async function PersonsPage({
                   <table className="ws-table">
                      <thead>
                         <tr>
+                           <th>ลำดับ</th>
                            <th>Username</th>
                            <th>Email</th>
                            <th>Role</th>
@@ -75,11 +78,15 @@ export default async function PersonsPage({
                            <th>ยืนยันอีเมล</th>
                            <th>เข้าใช้ล่าสุด</th>
                            <th>สมัครเมื่อ</th>
+                           <th></th>
                         </tr>
                      </thead>
                      <tbody>
-                        {items.map((u: UserListItem) => (
+                        {items.map((u: UserListItem, index: number) => (
                            <tr key={u.id}>
+                              <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                                 {(page - 1) * limit + index + 1}
+                              </td>
                               <td>
                                  <span style={{ fontWeight: 600, color: "var(--text)" }}>
                                     {u.username}
@@ -115,30 +122,54 @@ export default async function PersonsPage({
                               <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
                                  {formatDate(u.created_at)}
                               </td>
+                              <td>
+                                 <Link
+                                    href={`/workspace/persons/${u.id}/edit`}
+                                    className="ws-btn-ghost ws-btn-sm"
+                                 >
+                                    แก้ไข
+                                 </Link>
+                              </td>
                            </tr>
                         ))}
                      </tbody>
                   </table>
 
-                  {pagination.total_pages > 1 && (
-                     <div className="ws-pagination">
-                        <span>
-                           หน้า {page} / {pagination.total_pages} ({pagination.total_records} คน)
-                        </span>
-                        <div className="ws-pagination-links">
-                           {page > 1 && (
-                              <Link href={`/workspace/persons?page=${page - 1}`} className="ws-pagination-link">
-                                 ← ก่อนหน้า
-                              </Link>
-                           )}
-                           {page < pagination.total_pages && (
-                              <Link href={`/workspace/persons?page=${page + 1}`} className="ws-pagination-link">
-                                 ถัดไป →
-                              </Link>
-                           )}
-                        </div>
+                  <div className="ws-pagination">
+                     <span>
+                        {pagination.total_records} คน · หน้า {page} / {pagination.total_pages}
+                     </span>
+                     <div className="ws-pagination-links">
+                        <Link
+                           href={`/workspace/persons?page=${page - 1}`}
+                           className="ws-pagination-link"
+                           aria-disabled={page <= 1 ? "true" : undefined}
+                        >
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
+                              <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+                           </svg>
+                        </Link>
+                        {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map((p) => (
+                           <Link
+                              key={p}
+                              href={`/workspace/persons?page=${p}`}
+                              className="ws-pagination-link"
+                              style={p === page ? { background: "var(--accent)", color: "#fff", borderColor: "var(--accent)" } : undefined}
+                           >
+                              {p}
+                           </Link>
+                        ))}
+                        <Link
+                           href={`/workspace/persons?page=${page + 1}`}
+                           className="ws-pagination-link"
+                           aria-disabled={page >= pagination.total_pages ? "true" : undefined}
+                        >
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
+                              <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                           </svg>
+                        </Link>
                      </div>
-                  )}
+                  </div>
                </>
             )}
          </div>

@@ -5,6 +5,7 @@ import type {
    FullProfileData,
    SocialPlatform,
    UserMe,
+   UserListResult,
    Project,
    ProjectListResult,
    TransactionCategory,
@@ -13,6 +14,8 @@ import type {
    Member,
    DashboardStats,
    TaskListResult,
+   ProjectStatusMeta,
+   ProjectFinancialPlan,
 } from "./types";
 
 const API_URL =
@@ -53,8 +56,7 @@ export async function fetchSocialPlatforms(): Promise<SocialPlatform[]> {
 
 // ─── Authenticated helpers (server-side only — use INTERNAL_API_URL) ──────────
 
-const INTERNAL_URL =
-   process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
+const INTERNAL_URL = process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
 
 export async function fetchMe(
    token: string,
@@ -105,6 +107,24 @@ export async function fetchProjects(
    return { data: json.data ?? null, status: res.status };
 }
 
+export async function fetchProjectStatuses(
+   token: string,
+   params?: { activeOnly?: boolean },
+): Promise<{ data: ProjectStatusMeta[] | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/project-statuses`);
+   if (params?.activeOnly !== undefined) {
+      url.searchParams.set("active_only", String(params.activeOnly));
+   }
+
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data?.items ?? json.data ?? null, status: res.status };
+}
+
 export async function fetchTransactions(
    token: string,
    projectId: string,
@@ -115,6 +135,19 @@ export async function fetchTransactions(
    if (params?.limit) url.searchParams.set("limit", String(params.limit));
 
    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchProjectFinancialPlan(
+   token: string,
+   projectId: string,
+): Promise<{ data: ProjectFinancialPlan | null; status: number }> {
+   const res = await fetch(`${INTERNAL_URL}/projects/${projectId}/financial-plan`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
    });
@@ -140,10 +173,10 @@ export async function fetchMembers(
    token: string,
    projectId: string,
 ): Promise<{ data: Member[] | null; status: number }> {
-   const res = await fetch(
-      `${INTERNAL_URL}/projects/${projectId}/members`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
-   );
+   const res = await fetch(`${INTERNAL_URL}/projects/${projectId}/members`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
    if (!res.ok) return { data: null, status: res.status };
    const json = await res.json();
    return { data: json.data?.items ?? json.data ?? null, status: res.status };
@@ -172,6 +205,49 @@ export async function fetchDashboardStats(
    token: string,
 ): Promise<{ data: DashboardStats | null; status: number }> {
    const res = await fetch(`${INTERNAL_URL}/dashboard/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchUsers(
+   token: string,
+   params?: { page?: number; limit?: number },
+): Promise<{ data: UserListResult | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/users`);
+   if (params?.page) url.searchParams.set("page", String(params.page));
+   if (params?.limit) url.searchParams.set("limit", String(params.limit));
+
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchUserById(
+   token: string,
+   userId: string,
+): Promise<{ data: UserMe | null; status: number }> {
+   const res = await fetch(`${INTERNAL_URL}/users/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchPersonProfile(
+   token: string,
+   personId: string,
+): Promise<{ data: FullProfileData | null; status: number }> {
+   const res = await fetch(`${INTERNAL_URL}/users/${personId}/profile`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
    });

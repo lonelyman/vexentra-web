@@ -1,35 +1,24 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { fetchProjects } from "@/lib/api/client";
-import type { Project, ProjectStatus } from "@/lib/api/types";
+import { fetchProjectStatuses, fetchProjects } from "@/lib/api/client";
+import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
+import type { Project, ProjectStatus, ProjectStatusMeta } from "@/lib/api/types";
 import CreateProjectButton from "@/components/workspace/CreateProjectButton";
+import {
+   buildProjectStatusLabelMap,
+   FALLBACK_PROJECT_STATUSES,
+} from "@/lib/project-status";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
-
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-   draft: "ร่าง",
-   planned: "วางแผน",
-   bidding: "ประมูล",
-   active: "ดำเนินการ",
-   on_hold: "พักงาน",
-   closed: "ปิดงาน",
-};
-
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-   { value: "", label: "ทุกสถานะ" },
-   { value: "draft", label: "ร่าง" },
-   { value: "planned", label: "วางแผน" },
-   { value: "bidding", label: "ประมูล" },
-   { value: "active", label: "ดำเนินการ" },
-   { value: "on_hold", label: "พักงาน" },
-   { value: "closed", label: "ปิดงาน" },
-];
-
-function StatusBadge({ status }: { status: ProjectStatus }) {
+function StatusBadge({
+   status,
+   labels,
+}: {
+   status: ProjectStatus;
+   labels: Record<ProjectStatus, string>;
+}) {
    return (
       <span className={`ws-badge ws-badge-${status}`}>
-         {STATUS_LABEL[status] ?? status}
+         {labels[status] ?? status}
       </span>
    );
 }
@@ -56,28 +45,39 @@ export default async function ProjectsPage({
 }: {
    searchParams: Promise<SearchParams>;
 }) {
-   const token = (await cookies()).get("token")?.value;
-   if (!token) redirect("/login");
-
+   const token = await requireAuth("/workspace/projects");
    const params = await searchParams;
    const page = Math.max(1, Number(params.page) || 1);
    const search = params.search?.trim() || "";
    const status = params.status || "";
    const limit = 15;
 
-   const { data, status: httpStatus } = await fetchProjects(token, {
-      page,
-      limit,
-      search: search || undefined,
-      status: status || undefined,
-   });
+   const [projectsResult, statusesResult] = await Promise.all([
+      fetchProjects(token, {
+         page,
+         limit,
+         search: search || undefined,
+         status: status || undefined,
+      }),
+      fetchProjectStatuses(token, { activeOnly: true }),
+   ]);
 
-   if (!data) {
-      if (httpStatus === 401) {
-         redirect("/api/refresh-session?redirect=/workspace/projects");
-      }
-      redirect("/api/clear-session");
-   }
+   const { data, status: httpStatus } = projectsResult;
+
+   if (!data) handleAuthError(httpStatus, "/workspace/projects");
+
+   const statusItems = statusesResult.data ?? FALLBACK_PROJECT_STATUSES;
+   const statusLabels = buildProjectStatusLabelMap(statusItems);
+   const statusOptions: { value: string; label: string }[] = [
+      { value: "", label: "ทุกสถานะ" },
+      ...statusItems
+         .slice()
+         .sort(
+            (a: ProjectStatusMeta, b: ProjectStatusMeta) =>
+               a.sort_order - b.sort_order,
+         )
+         .map((s: ProjectStatusMeta) => ({ value: s.status, label: s.label_th })),
+   ];
 
    const { items, pagination } = data;
    const totalPages = pagination.total_pages || 1;
@@ -120,7 +120,7 @@ export default async function ProjectsPage({
                defaultValue={status}
                className="ws-filter-select"
             >
-               {STATUS_OPTIONS.map((opt) => (
+               {statusOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                      {opt.label}
                   </option>
@@ -149,7 +149,7 @@ export default async function ProjectsPage({
                   <div className="ws-empty-desc">
                      {search || status
                         ? "ลองเปลี่ยนคำค้นหาหรือล้างตัวกรอง"
-                        : "กดปุ่ม \"สร้างโปรเจกต์\" เพื่อเริ่มต้น"}
+                        : 'กดปุ่ม "สร้างโปรเจกต์" เพื่อเริ่มต้น'}
                   </div>
                </div>
             ) : (
@@ -182,7 +182,9 @@ export default async function ProjectsPage({
                                     href={`/workspace/projects/${p.project_code.toLowerCase()}`}
                                     style={{ textDecoration: "none" }}
                                  >
-                                    <div className="ws-project-name">{p.name}</div>
+                                    <div className="ws-project-name">
+                                       {p.name}
+                                    </div>
                                     {p.description && (
                                        <div className="ws-project-desc">
                                           {p.description}
@@ -191,12 +193,25 @@ export default async function ProjectsPage({
                                  </Link>
                               </td>
                               <td>
-                                 <StatusBadge status={p.status} />
+                                 <StatusBadge
+                                    status={p.status}
+                                    labels={statusLabels}
+                                 />
                               </td>
-                              <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                              <td
+                                 style={{
+                                    color: "var(--text-dim)",
+                                    fontSize: 13,
+                                 }}
+                              >
                                  {formatDate(p.created_at)}
                               </td>
-                              <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                              <td
+                                 style={{
+                                    color: "var(--text-dim)",
+                                    fontSize: 13,
+                                 }}
+                              >
                                  {formatDate(p.updated_at)}
                               </td>
                            </tr>

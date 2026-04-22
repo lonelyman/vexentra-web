@@ -118,6 +118,22 @@ export type ProjectStatus =
    | "on_hold"
    | "closed";
 
+export type ProjectStatusPhase =
+   | "backlog"
+   | "pre_sales"
+   | "delivery"
+   | "terminal";
+
+export interface ProjectStatusMeta {
+   status: ProjectStatus;
+   label_th: string;
+   phase: ProjectStatusPhase;
+   sort_order: number;
+   is_terminal: boolean;
+   requires_client: boolean;
+   is_active: boolean;
+}
+
 export interface Project {
    id: string;
    project_code: string;
@@ -126,12 +142,40 @@ export interface Project {
    status: ProjectStatus;
    client_person_id: string | null;
    client_name_raw: string | null;
+   client_email_raw: string | null;
    scheduled_start_at: string | null;
    deadline_at: string | null;
    activated_at: string | null;
    closed_at: string | null;
    closure_reason: string | null;
    created_by_user_id: string;
+   created_at: string;
+   updated_at: string;
+}
+
+export interface ProjectPaymentInstallment {
+   id: string;
+   project_id: string;
+   sort_order: number;
+   title: string;
+   amount: string;
+   planned_delivery_date: string | null;
+   planned_receive_date: string | null;
+   note: string | null;
+   created_at: string;
+   updated_at: string;
+}
+
+export interface ProjectFinancialPlan {
+   project_id: string;
+   contract_amount: string;
+   retention_amount: string;
+   planned_delivery_date: string | null;
+   payment_note: string | null;
+   installments: ProjectPaymentInstallment[];
+   installments_total: string;
+   net_receivable: string;
+   unallocated_remaining: string;
    created_at: string;
    updated_at: string;
 }
