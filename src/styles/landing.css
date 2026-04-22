@@ -162,6 +162,213 @@
    border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
+/* ─── MILESTONES ─── */
+.landing-milestones {
+   padding: 0 5vw 80px;
+}
+.milestone-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+   gap: 16px;
+   max-width: 900px;
+   margin: 0 auto;
+}
+.milestone-card {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 32px 16px;
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: var(--radius);
+   text-align: center;
+   transition: border-color 0.2s;
+}
+.milestone-card:hover {
+   border-color: var(--border2);
+}
+.milestone-value {
+   font-size: 36px;
+   font-weight: 700;
+   color: var(--accent);
+   letter-spacing: -1px;
+   line-height: 1;
+   margin-bottom: 8px;
+}
+.milestone-label {
+   font-size: 13px;
+   color: var(--text-dim);
+   line-height: 1.4;
+}
+
+/* ─── NEWS / ANNOUNCEMENTS ─── */
+.landing-news {
+   padding: 0 5vw 100px;
+   max-width: 900px;
+   margin: 0 auto;
+}
+.landing-news .section-title {
+   font-size: 28px;
+   font-weight: 600;
+   letter-spacing: -0.5px;
+   margin-bottom: 8px;
+}
+.landing-news .section-sub {
+   color: var(--text-muted);
+   font-size: 14px;
+   margin-bottom: 40px;
+}
+.news-list {
+   display: flex;
+   flex-direction: column;
+   gap: 16px;
+}
+.news-card {
+   padding: 28px;
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: var(--radius);
+   transition:
+      border-color 0.2s,
+      transform 0.15s;
+   text-decoration: none;
+   color: inherit;
+   display: block;
+}
+.news-card:hover {
+   border-color: var(--border2);
+   transform: translateY(-2px);
+}
+.news-meta {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   margin-bottom: 12px;
+}
+.news-tag {
+   padding: 2px 8px;
+   border-radius: 999px;
+   font-size: 11px;
+   font-weight: 500;
+   letter-spacing: 0.3px;
+   background: rgba(59, 130, 246, 0.12);
+   color: var(--accent);
+   border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.news-date {
+   font-size: 12px;
+   color: var(--text-muted);
+}
+.news-title {
+   font-size: 17px;
+   font-weight: 600;
+   color: var(--text);
+   margin-bottom: 8px;
+   line-height: 1.3;
+}
+.news-desc {
+   font-size: 14px;
+   color: var(--text-dim);
+   line-height: 1.6;
+   margin: 0;
+}
+
+/* ─── WORKFLOW ─── */
+.landing-workflow {
+   padding: 60px 5vw 80px;
+   max-width: 1100px;
+   margin: 0 auto;
+}
+.landing-workflow .section-title {
+   text-align: center;
+   font-size: 28px;
+   font-weight: 600;
+   letter-spacing: -0.5px;
+   margin-bottom: 8px;
+}
+.landing-workflow .section-sub {
+   text-align: center;
+   color: var(--text-muted);
+   font-size: 14px;
+   margin-bottom: 48px;
+}
+.workflow-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+   gap: 20px;
+}
+.workflow-card {
+   padding: 28px 24px;
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: var(--radius);
+   position: relative;
+}
+.workflow-step {
+   display: inline-block;
+   font-size: 11px;
+   font-weight: 700;
+   letter-spacing: 1px;
+   color: var(--accent);
+   margin-bottom: 12px;
+}
+.workflow-card h3 {
+   font-size: 16px;
+   font-weight: 600;
+   margin-bottom: 8px;
+   color: var(--text);
+}
+.workflow-card p {
+   font-size: 14px;
+   color: var(--text-dim);
+   line-height: 1.6;
+   margin: 0;
+}
+
+/* ─── BOTTOM CTA ─── */
+.landing-cta-bottom {
+   padding: 80px 5vw;
+   text-align: center;
+   border-top: 1px solid var(--border);
+   max-width: 700px;
+   margin: 0 auto;
+}
+.landing-cta-bottom h2 {
+   font-size: 28px;
+   font-weight: 700;
+   letter-spacing: -0.5px;
+   margin-bottom: 12px;
+}
+.landing-cta-bottom p {
+   font-size: 16px;
+   color: var(--text-dim);
+   margin-bottom: 28px;
+}
+.landing-cta-bottom .cta-row {
+   display: flex;
+   gap: 12px;
+   justify-content: center;
+   flex-wrap: wrap;
+}
+
+/* ─── CONTACT CHANNEL CARD ─── */
+.contact-channel-card {
+   display: flex;
+   gap: 20px;
+   align-items: flex-start;
+}
+.contact-channel-icon {
+   flex-shrink: 0;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   width: 48px;
+   height: 48px;
+   background: rgba(59, 130, 246, 0.1);
+   color: var(--accent);
+   border-radius: var(--radius-sm);
+}
+
 /* ─── FOOTER ─── */
 .landing-footer {
    padding: 32px 5vw;

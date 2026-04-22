@@ -1,36 +1,50 @@
-import { cookies } from "next/headers";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
 import {
+   fetchMe,
    fetchProjectByCode,
+   fetchProjectStatuses,
    fetchTransactions,
    fetchTransactionSummary,
    fetchMembers,
    fetchTxCategories,
    fetchTasks,
+   fetchProjectFinancialPlan,
 } from "@/lib/api/client";
-import type { ProjectStatus, Transaction, Member, Task, TaskStatus } from "@/lib/api/types";
+import type {
+   ProjectStatus,
+   ProjectStatusMeta,
+   Transaction,
+   Member,
+   Task,
+   TaskStatus,
+} from "@/lib/api/types";
 import CreateTransactionModal from "@/components/workspace/CreateTransactionModal";
 import AddMemberModal from "@/components/workspace/AddMemberModal";
 import MemberRemoveButton from "@/components/workspace/MemberActions";
 import CreateTaskModal from "@/components/workspace/CreateTaskModal";
 import TaskCard from "@/components/workspace/TaskCard";
+import UpdateProjectStatusModal from "@/components/workspace/UpdateProjectStatusModal";
+import TransactionRowActions from "@/components/workspace/TransactionRowActions";
+import ProjectFinancialPlanEditor from "@/components/workspace/ProjectFinancialPlanEditor";
+import {
+   buildProjectStatusLabelMap,
+   FALLBACK_PROJECT_STATUSES,
+} from "@/lib/project-status";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-   draft: "ร่าง",
-   planned: "วางแผน",
-   bidding: "ประมูล",
-   active: "ดำเนินการ",
-   on_hold: "พักงาน",
-   closed: "ปิดงาน",
-};
-
-function StatusBadge({ status }: { status: ProjectStatus }) {
+function StatusBadge({
+   status,
+   labels,
+}: {
+   status: ProjectStatus;
+   labels: Record<ProjectStatus, string>;
+}) {
    return (
       <span className={`ws-badge ws-badge-${status}`}>
-         {STATUS_LABEL[status] ?? status}
+         {labels[status] ?? status}
       </span>
    );
 }
@@ -47,14 +61,23 @@ function formatDate(iso: string | null | undefined): string {
 function formatAmount(amount: string): string {
    const n = parseFloat(amount);
    if (isNaN(n)) return amount;
-   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+   return n.toLocaleString("th-TH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+   });
 }
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
-type Tab = "overview" | "transactions" | "members" | "tasks";
+type Tab =
+   | "overview"
+   | "financial_plan"
+   | "transactions"
+   | "members"
+   | "tasks";
 const TABS: { id: Tab; label: string }[] = [
    { id: "overview", label: "ภาพรวม" },
+   { id: "financial_plan", label: "ค่าจ้าง/งวดรับเงิน" },
    { id: "tasks", label: "งาน" },
    { id: "transactions", label: "รายการรับ-จ่าย" },
    { id: "members", label: "สมาชิก" },
@@ -71,8 +94,7 @@ export default async function ProjectDetailPage({
    params,
    searchParams,
 }: PageProps) {
-   const token = (await cookies()).get("token")?.value;
-   if (!token) redirect("/login");
+   const token = await requireAuth("/workspace/projects");
 
    const { code } = await params;
    const sp = await searchParams;
@@ -80,11 +102,28 @@ export default async function ProjectDetailPage({
    const page = Math.max(1, Number(sp.page) || 1);
    const limit = 20;
 
+   const [projectResult, statusResult, meResult] = await Promise.all([
+      fetchProjectByCode(token, code),
+      fetchProjectStatuses(token, { activeOnly: true }),
+      fetchMe(token),
+   ]);
+
    // Always fetch the project
-   const { data: project, status: pStatus } = await fetchProjectByCode(token, code);
-   if (pStatus === 401) redirect("/api/refresh-session?redirect=/workspace/projects");
+   const { data: project, status: pStatus } = projectResult;
+   if (pStatus === 401) handleAuthError(401, "/workspace/projects");
    if (pStatus === 404 || !project) notFound();
-   if (pStatus === 403) redirect("/workspace/projects");
+   if (pStatus === 403) handleAuthError(403, "/workspace/projects");
+   const { data: me, status: meStatus } = meResult;
+   if (!me) handleAuthError(meStatus, "/workspace/projects");
+
+   const statusItems = statusResult.data ?? FALLBACK_PROJECT_STATUSES;
+   const statusLabelMap = buildProjectStatusLabelMap(statusItems);
+   const openStatusOptions = statusItems
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((s: ProjectStatusMeta) => ({
+         value: s.status as ProjectStatus,
+         label: s.label_th,
+      }));
 
    const isClosed = project.status === "closed";
 
@@ -103,12 +142,29 @@ export default async function ProjectDetailPage({
 
             <div className="ws-page-header">
                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                     <span className="ws-project-code">{project.project_code}</span>
-                     <StatusBadge status={project.status} />
+                  <div
+                     style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 6,
+                     }}
+                  >
+                     <span className="ws-project-code">
+                        {project.project_code}
+                     </span>
+                     <StatusBadge
+                        status={project.status}
+                        labels={statusLabelMap}
+                     />
                   </div>
                   <h1 className="ws-page-title">{project.name}</h1>
                </div>
+               <UpdateProjectStatusModal
+                  project={project}
+                  options={openStatusOptions}
+                  canEditClosedStatus={me.role === "admin"}
+               />
             </div>
 
             <nav className="ws-tabs">
@@ -127,19 +183,29 @@ export default async function ProjectDetailPage({
                <div className="ws-detail-card">
                   <div className="ws-detail-field-label">สถานะ</div>
                   <div className="ws-detail-field-value">
-                     <StatusBadge status={project.status} />
+                     <StatusBadge
+                        status={project.status}
+                        labels={statusLabelMap}
+                     />
                   </div>
                </div>
 
                <div className="ws-detail-card">
                   <div className="ws-detail-field-label">ลูกค้า</div>
-                  <div className={`ws-detail-field-value ${!project.client_name_raw && !project.client_person_id ? "muted" : ""}`}>
-                     {project.client_name_raw || (project.client_person_id ? project.client_person_id : "ยังไม่ระบุ")}
+                  <div
+                     className={`ws-detail-field-value ${!project.client_name_raw && !project.client_person_id ? "muted" : ""}`}
+                  >
+                     {project.client_name_raw ||
+                        (project.client_person_id
+                           ? project.client_person_id
+                           : "ยังไม่ระบุ")}
                   </div>
                </div>
 
                <div className="ws-detail-card">
-                  <div className="ws-detail-field-label">วันที่เริ่มต้นที่วางแผน</div>
+                  <div className="ws-detail-field-label">
+                     วันที่เริ่มต้นที่วางแผน
+                  </div>
                   <div className="ws-detail-field-value">
                      {formatDate(project.scheduled_start_at)}
                   </div>
@@ -173,14 +239,19 @@ export default async function ProjectDetailPage({
                {project.closure_reason && (
                   <div className="ws-detail-card">
                      <div className="ws-detail-field-label">เหตุผลปิดงาน</div>
-                     <div className="ws-detail-field-value">{project.closure_reason}</div>
+                     <div className="ws-detail-field-value">
+                        {project.closure_reason}
+                     </div>
                   </div>
                )}
 
                {project.description && (
                   <div className="ws-detail-card ws-detail-card-full">
                      <div className="ws-detail-field-label">รายละเอียด</div>
-                     <div className="ws-detail-field-value" style={{ whiteSpace: "pre-wrap" }}>
+                     <div
+                        className="ws-detail-field-value"
+                        style={{ whiteSpace: "pre-wrap" }}
+                     >
                         {project.description}
                      </div>
                   </div>
@@ -188,14 +259,71 @@ export default async function ProjectDetailPage({
 
                <div className="ws-detail-card">
                   <div className="ws-detail-field-label">สร้างเมื่อ</div>
-                  <div className="ws-detail-field-value">{formatDate(project.created_at)}</div>
+                  <div className="ws-detail-field-value">
+                     {formatDate(project.created_at)}
+                  </div>
                </div>
 
                <div className="ws-detail-card">
                   <div className="ws-detail-field-label">อัปเดตล่าสุด</div>
-                  <div className="ws-detail-field-value">{formatDate(project.updated_at)}</div>
+                  <div className="ws-detail-field-value">
+                     {formatDate(project.updated_at)}
+                  </div>
                </div>
             </div>
+         </main>
+      );
+   }
+
+   if (tab === "financial_plan") {
+      const { data: planData } = await fetchProjectFinancialPlan(token, project.id);
+
+      return (
+         <main className="ws-page">
+            <Link href="/workspace/projects" className="ws-back-link">
+               ← กลับรายการโปรเจกต์
+            </Link>
+
+            <div className="ws-page-header">
+               <div>
+                  <div
+                     style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 6,
+                     }}
+                  >
+                     <span className="ws-project-code">
+                        {project.project_code}
+                     </span>
+                     <StatusBadge
+                        status={project.status}
+                        labels={statusLabelMap}
+                     />
+                  </div>
+                  <h1 className="ws-page-title">{project.name}</h1>
+               </div>
+            </div>
+
+            <nav className="ws-tabs">
+               {TABS.map((t) => (
+                  <Link
+                     key={t.id}
+                     href={tabUrl(t.id)}
+                     className={`ws-tab ${tab === t.id ? "active" : ""}`}
+                  >
+                     {t.label}
+                  </Link>
+               ))}
+            </nav>
+
+            <ProjectFinancialPlanEditor
+               projectId={project.id}
+               projectCode={project.project_code}
+               initialPlan={planData}
+               canEdit={!isClosed || me.role === "admin"}
+            />
          </main>
       );
    }
@@ -230,9 +358,21 @@ export default async function ProjectDetailPage({
 
             <div className="ws-page-header">
                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                     <span className="ws-project-code">{project.project_code}</span>
-                     <StatusBadge status={project.status} />
+                  <div
+                     style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 6,
+                     }}
+                  >
+                     <span className="ws-project-code">
+                        {project.project_code}
+                     </span>
+                     <StatusBadge
+                        status={project.status}
+                        labels={statusLabelMap}
+                     />
                   </div>
                   <h1 className="ws-page-title">{project.name}</h1>
                </div>
@@ -269,7 +409,9 @@ export default async function ProjectDetailPage({
                      <div className="ws-summary-label">คงเหลือ (สุทธิ)</div>
                      <div
                         className={`ws-summary-amount ${
-                           net >= 0 ? "ws-summary-net-positive" : "ws-summary-net-negative"
+                           net >= 0
+                              ? "ws-summary-net-positive"
+                              : "ws-summary-net-negative"
                         }`}
                      >
                         ฿{formatAmount(summary.net)}
@@ -303,11 +445,13 @@ export default async function ProjectDetailPage({
                {transactions.length === 0 ? (
                   <div className="ws-empty">
                      <div className="ws-empty-icon">💰</div>
-                     <div className="ws-empty-title">ยังไม่มีรายการรับ-จ่าย</div>
+                     <div className="ws-empty-title">
+                        ยังไม่มีรายการรับ-จ่าย
+                     </div>
                      <div className="ws-empty-desc">
                         {isClosed
                            ? "โปรเจกต์ปิดแล้ว ไม่สามารถเพิ่มรายการได้"
-                           : "กดปุ่ม \"เพิ่มรายการ\" เพื่อบันทึกรายการแรก"}
+                           : 'กดปุ่ม "เพิ่มรายการ" เพื่อบันทึกรายการแรก'}
                      </div>
                   </div>
                ) : (
@@ -319,6 +463,7 @@ export default async function ProjectDetailPage({
                               <th>ประเภท</th>
                               <th>หมายเหตุ</th>
                               <th style={{ textAlign: "right" }}>จำนวนเงิน</th>
+                              <th style={{ textAlign: "right" }}>จัดการ</th>
                            </tr>
                         </thead>
                         <tbody>
@@ -327,29 +472,58 @@ export default async function ProjectDetailPage({
                               const isIncome = cat?.type === "income";
                               return (
                                  <tr key={tx.id}>
-                                    <td style={{ color: "var(--text-dim)", fontSize: 13, whiteSpace: "nowrap" }}>
+                                    <td
+                                       style={{
+                                          color: "var(--text-dim)",
+                                          fontSize: 13,
+                                          whiteSpace: "nowrap",
+                                       }}
+                                    >
                                        {formatDate(tx.occurred_at)}
                                     </td>
                                     <td>
                                        {cat ? (
-                                          <span style={{ fontSize: 13 }}>{cat.name}</span>
+                                          <span style={{ fontSize: 13 }}>
+                                             {cat.name}
+                                          </span>
                                        ) : (
-                                          <span style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                                          <span
+                                             style={{
+                                                fontSize: 12,
+                                                color: "var(--text-dim)",
+                                             }}
+                                          >
                                              {tx.category_id.slice(0, 8)}…
                                           </span>
                                        )}
                                     </td>
-                                    <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                                    <td
+                                       style={{
+                                          color: "var(--text-dim)",
+                                          fontSize: 13,
+                                       }}
+                                    >
                                        {tx.note || "—"}
                                     </td>
                                     <td style={{ textAlign: "right" }}>
                                        <span
                                           className={
-                                             isIncome ? "ws-amount-income" : "ws-amount-expense"
+                                             isIncome
+                                                ? "ws-amount-income"
+                                                : "ws-amount-expense"
                                           }
                                        >
-                                          {isIncome ? "+" : "-"}฿{formatAmount(tx.amount)}
+                                          {isIncome ? "+" : "-"}฿
+                                          {formatAmount(tx.amount)}
                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: "right" }}>
+                                       <TransactionRowActions
+                                          projectId={project.id}
+                                          tx={tx}
+                                          categories={categories}
+                                          disabled={isClosed}
+                                       />
                                     </td>
                                  </tr>
                               );
@@ -390,10 +564,17 @@ export default async function ProjectDetailPage({
    // ─── Tasks Tab ────────────────────────────────────────────────────────────
 
    if (tab === "tasks") {
-      const { data: taskData } = await fetchTasks(token, project.id, { limit: 100 });
+      const { data: taskData } = await fetchTasks(token, project.id, {
+         limit: 100,
+      });
       const tasks = taskData?.items ?? [];
 
-      const STATUS_ORDER: TaskStatus[] = ["in_progress", "todo", "done", "cancelled"];
+      const STATUS_ORDER: TaskStatus[] = [
+         "in_progress",
+         "todo",
+         "done",
+         "cancelled",
+      ];
       const STATUS_LABEL_MAP: Record<TaskStatus, string> = {
          in_progress: "กำลังทำ",
          todo: "ยังไม่เริ่ม",
@@ -418,16 +599,32 @@ export default async function ProjectDetailPage({
             </Link>
             <div className="ws-page-header">
                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                     <span className="ws-project-code">{project.project_code}</span>
-                     <StatusBadge status={project.status} />
+                  <div
+                     style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 6,
+                     }}
+                  >
+                     <span className="ws-project-code">
+                        {project.project_code}
+                     </span>
+                     <StatusBadge
+                        status={project.status}
+                        labels={statusLabelMap}
+                     />
                   </div>
                   <h1 className="ws-page-title">{project.name}</h1>
                </div>
             </div>
             <nav className="ws-tabs">
                {TABS.map((t) => (
-                  <Link key={t.id} href={tabUrl(t.id)} className={`ws-tab ${tab === t.id ? "active" : ""}`}>
+                  <Link
+                     key={t.id}
+                     href={tabUrl(t.id)}
+                     className={`ws-tab ${tab === t.id ? "active" : ""}`}
+                  >
                      {t.label}
                   </Link>
                ))}
@@ -445,7 +642,9 @@ export default async function ProjectDetailPage({
                   <div className="ws-empty">
                      <div className="ws-empty-icon">✅</div>
                      <div className="ws-empty-title">ยังไม่มีงาน</div>
-                     <div className="ws-empty-desc">กดปุ่ม &quot;สร้างงาน&quot; เพื่อเพิ่มงานแรก</div>
+                     <div className="ws-empty-desc">
+                        กดปุ่ม &quot;สร้างงาน&quot; เพื่อเพิ่มงานแรก
+                     </div>
                   </div>
                </div>
             ) : (
@@ -456,11 +655,17 @@ export default async function ProjectDetailPage({
                      <div key={status} className="ws-task-group">
                         <div className="ws-task-group-header">
                            {STATUS_LABEL_MAP[status]}
-                           <span className="ws-task-group-count">{group.length}</span>
+                           <span className="ws-task-group-count">
+                              {group.length}
+                           </span>
                         </div>
                         <div className="ws-task-list">
                            {group.map((t: Task) => (
-                              <TaskCard key={t.id} task={t} projectId={project.id} />
+                              <TaskCard
+                                 key={t.id}
+                                 task={t}
+                                 projectId={project.id}
+                              />
                            ))}
                         </div>
                      </div>
@@ -484,9 +689,18 @@ export default async function ProjectDetailPage({
 
          <div className="ws-page-header">
             <div>
-               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <span className="ws-project-code">{project.project_code}</span>
-                  <StatusBadge status={project.status} />
+               <div
+                  style={{
+                     display: "flex",
+                     alignItems: "center",
+                     gap: 10,
+                     marginBottom: 6,
+                  }}
+               >
+                  <span className="ws-project-code">
+                     {project.project_code}
+                  </span>
+                  <StatusBadge status={project.status} labels={statusLabelMap} />
                </div>
                <h1 className="ws-page-title">{project.name}</h1>
             </div>
@@ -514,7 +728,9 @@ export default async function ProjectDetailPage({
                <div className="ws-empty">
                   <div className="ws-empty-icon">👥</div>
                   <div className="ws-empty-title">ยังไม่มีสมาชิก</div>
-                  <div className="ws-empty-desc">กดปุ่ม &quot;เพิ่มสมาชิก&quot; เพื่อเพิ่มคนเข้าทีม</div>
+                  <div className="ws-empty-desc">
+                     กดปุ่ม &quot;เพิ่มสมาชิก&quot; เพื่อเพิ่มคนเข้าทีม
+                  </div>
                </div>
             ) : (
                members.map((m: Member) => (
@@ -529,7 +745,13 @@ export default async function ProjectDetailPage({
                            )}
                         </div>
                         <div className="ws-member-id">{m.person_id}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
+                        <div
+                           style={{
+                              fontSize: 11,
+                              color: "var(--text-dim)",
+                              marginTop: 2,
+                           }}
+                        >
                            เข้าร่วม {formatDate(m.joined_at)}
                         </div>
                      </div>

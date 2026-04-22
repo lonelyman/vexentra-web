@@ -1,19 +1,17 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { fetchDashboardStats } from "@/lib/api/client";
-import type { ProjectStatus, DashboardStatusCount } from "@/lib/api/types";
+import { fetchDashboardStats, fetchProjectStatuses } from "@/lib/api/client";
+import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
+import type {
+   ProjectStatus,
+   DashboardStatusCount,
+   ProjectStatusMeta,
+} from "@/lib/api/types";
+import {
+   buildProjectStatusLabelMap,
+   FALLBACK_PROJECT_STATUSES,
+} from "@/lib/project-status";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-   draft: "ร่าง",
-   planned: "วางแผน",
-   bidding: "ประมูล",
-   active: "ดำเนินการ",
-   on_hold: "พักงาน",
-   closed: "ปิดงาน",
-};
 
 function formatAmount(s: string): string {
    const n = parseFloat(s);
@@ -50,27 +48,26 @@ const STATUS_COLOR: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-   const token = (await cookies()).get("token")?.value;
-   if (!token) redirect("/login");
+   const token = await requireAuth("/workspace");
+   const [statsResult, statusesResult] = await Promise.all([
+      fetchDashboardStats(token),
+      fetchProjectStatuses(token, { activeOnly: true }),
+   ]);
 
-   const { data: stats, status } = await fetchDashboardStats(token);
+   const { data: stats, status } = statsResult;
+   if (!stats) handleAuthError(status, "/workspace");
 
-   if (!stats) {
-      if (status === 401) redirect("/api/refresh-session?redirect=/workspace");
-      redirect("/api/clear-session");
-   }
+   const statusItems = statusesResult.data ?? FALLBACK_PROJECT_STATUSES;
+   const statusLabels = buildProjectStatusLabelMap(statusItems);
 
    // Build a lookup map so we can display all non-closed statuses even when count = 0
    const countMap = new Map<string, number>(
       stats.status_counts.map((s: DashboardStatusCount) => [s.status, s.count]),
    );
-   const displayStatuses: ProjectStatus[] = [
-      "active",
-      "bidding",
-      "planned",
-      "on_hold",
-      "draft",
-   ];
+   const displayStatuses: ProjectStatus[] = statusItems
+      .filter((s: ProjectStatusMeta) => !s.is_terminal)
+      .sort((a: ProjectStatusMeta, b: ProjectStatusMeta) => a.sort_order - b.sort_order)
+      .map((s: ProjectStatusMeta) => s.status);
 
    const net = parseFloat(stats.pl.net);
 
@@ -87,22 +84,34 @@ export default async function DashboardPage() {
          </div>
 
          {/* ─── Status counts ─── */}
-         <div className="ws-summary-grid" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
+         <div
+            className="ws-summary-grid"
+            style={{ gridTemplateColumns: "repeat(5, 1fr)" }}
+         >
             {displayStatuses.map((s) => (
                <Link
                   key={s}
                   href={`/workspace/projects?status=${s}`}
                   style={{ textDecoration: "none" }}
                >
-                  <div className="ws-summary-card" style={{ cursor: "pointer" }}>
-                     <div className="ws-summary-label">{STATUS_LABEL[s]}</div>
+                  <div
+                     className="ws-summary-card"
+                     style={{ cursor: "pointer" }}
+                  >
+                     <div className="ws-summary-label">{statusLabels[s]}</div>
                      <div
                         className="ws-summary-amount"
                         style={{ color: STATUS_COLOR[s] ?? "var(--text)" }}
                      >
                         {countMap.get(s) ?? 0}
                      </div>
-                     <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
+                     <div
+                        style={{
+                           fontSize: 11,
+                           color: "var(--text-dim)",
+                           marginTop: 2,
+                        }}
+                     >
                         โปรเจกต์
                      </div>
                   </div>
@@ -140,7 +149,9 @@ export default async function DashboardPage() {
                   <div className="ws-summary-label">กำไร/ขาดทุนสุทธิ</div>
                   <div
                      className={`ws-summary-amount ${
-                        net >= 0 ? "ws-summary-net-positive" : "ws-summary-net-negative"
+                        net >= 0
+                           ? "ws-summary-net-positive"
+                           : "ws-summary-net-negative"
                      }`}
                   >
                      ฿{formatAmount(stats.pl.net)}
@@ -167,7 +178,9 @@ export default async function DashboardPage() {
                <div className="ws-table-wrap">
                   <div className="ws-empty">
                      <div className="ws-empty-icon">🗓️</div>
-                     <div className="ws-empty-title">ไม่มี Deadline ที่ใกล้จะถึง</div>
+                     <div className="ws-empty-title">
+                        ไม่มี Deadline ที่ใกล้จะถึง
+                     </div>
                      <div className="ws-empty-desc">
                         โปรเจกต์ทั้งหมดยังไม่มี deadline ใน 30 วันข้างหน้า
                      </div>
@@ -189,7 +202,11 @@ export default async function DashboardPage() {
                         {stats.upcoming_deadlines.map((p) => {
                            const days = daysUntil(p.deadline_at);
                            const urgentColor =
-                              days <= 7 ? "#f87171" : days <= 14 ? "var(--gold)" : "var(--teal)";
+                              days <= 7
+                                 ? "#f87171"
+                                 : days <= 14
+                                   ? "var(--gold)"
+                                   : "var(--teal)";
                            return (
                               <tr key={p.id}>
                                  <td>
@@ -197,7 +214,9 @@ export default async function DashboardPage() {
                                        href={`/workspace/projects/${p.project_code.toLowerCase()}`}
                                        style={{ textDecoration: "none" }}
                                     >
-                                       <span className="ws-project-code">{p.project_code}</span>
+                                       <span className="ws-project-code">
+                                          {p.project_code}
+                                       </span>
                                     </Link>
                                  </td>
                                  <td>
@@ -205,15 +224,24 @@ export default async function DashboardPage() {
                                        href={`/workspace/projects/${p.project_code.toLowerCase()}`}
                                        style={{ textDecoration: "none" }}
                                     >
-                                       <span className="ws-project-name">{p.name}</span>
+                                       <span className="ws-project-name">
+                                          {p.name}
+                                       </span>
                                     </Link>
                                  </td>
                                  <td>
-                                    <span className={`ws-badge ws-badge-${p.status}`}>
-                                       {STATUS_LABEL[p.status] ?? p.status}
+                                    <span
+                                       className={`ws-badge ws-badge-${p.status}`}
+                                    >
+                                       {statusLabels[p.status] ?? p.status}
                                     </span>
                                  </td>
-                                 <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                                 <td
+                                    style={{
+                                       color: "var(--text-dim)",
+                                       fontSize: 13,
+                                    }}
+                                 >
                                     {formatDate(p.deadline_at)}
                                  </td>
                                  <td>
@@ -227,8 +255,8 @@ export default async function DashboardPage() {
                                        {days === 0
                                           ? "วันนี้!"
                                           : days < 0
-                                          ? `เกิน ${Math.abs(days)} วัน`
-                                          : `${days} วัน`}
+                                            ? `เกิน ${Math.abs(days)} วัน`
+                                            : `${days} วัน`}
                                     </span>
                                  </td>
                               </tr>

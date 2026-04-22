@@ -8,72 +8,32 @@ export const metadata = {
       "แพลตฟอร์มบริหารโปรเจกต์สำหรับคนรับงาน ทีมเล็ก และฟรีแลนซ์ รวมทุกเรื่องของโปรเจกต์ไว้ในที่เดียว",
 };
 
-type FeatureIconProps = { children: React.ReactNode };
-const FeatureIcon = ({ children }: FeatureIconProps) => (
-   <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-   >
-      {children}
-   </svg>
-);
+const announcements = [
+   {
+      date: "เม.ย. 2569",
+      tag: "อัปเดต",
+      title: "เปิดตัว Transaction & Finance Module",
+      desc: "รองรับการบันทึกรายรับ-รายจ่ายต่อโปรเจกต์ พร้อม export CSV สำหรับทำบัญชี",
+   },
+   {
+      date: "เม.ย. 2569",
+      tag: "ฟีเจอร์ใหม่",
+      title: "Project Member Management",
+      desc: "เพิ่มระบบจัดการสมาชิกในโปรเจกต์ รองรับ role-based access และ project lead",
+   },
+   {
+      date: "เม.ย. 2569",
+      tag: "โครงสร้าง",
+      title: "Clean Architecture + PostgreSQL 18",
+      desc: "ระบบ backend ออกแบบด้วย Clean Architecture พร้อม SQL migrations ที่ production-ready",
+   },
+];
 
-const features = [
-   {
-      icon: (
-         <FeatureIcon>
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-         </FeatureIcon>
-      ),
-      title: "Project Intake",
-      desc: "บันทึกงานที่รับเข้ามา ชื่อลูกค้า deadline รายละเอียด มูลค่างาน ครบในที่เดียว",
-      soon: false,
-   },
-   {
-      icon: (
-         <FeatureIcon>
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-         </FeatureIcon>
-      ),
-      title: "Team & Roles",
-      desc: "จัดการสมาชิกในโปรเจกต์ กำหนดบทบาทของแต่ละคนให้ชัดเจน",
-      soon: true,
-   },
-   {
-      icon: (
-         <FeatureIcon>
-            <polyline points="20 6 9 17 4 12" />
-         </FeatureIcon>
-      ),
-      title: "Tasks & Progress",
-      desc: "มอบหมายงานย่อย ติดตามความคืบหน้า ดูว่าเป็นไปตามแผนไหม",
-      soon: true,
-   },
-   {
-      icon: (
-         <FeatureIcon>
-            <path d="M12 19l7-7 3 3-7 7-3-3z" />
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-            <path d="M2 2l7.586 7.586" />
-            <circle cx="11" cy="11" r="2" />
-         </FeatureIcon>
-      ),
-      title: "Portfolio",
-      desc: "เมื่อโปรเจกต์จบ กลายเป็นผลงานในโปรไฟล์ได้ทันที ไม่ต้องเขียนซ้ำ",
-      soon: false,
-   },
+const milestones = [
+   { value: "3+", label: "Modules พร้อมใช้งาน" },
+   { value: "100%", label: "API Coverage" },
+   { value: "JWT", label: "Auth ระดับองค์กร" },
+   { value: "Docker", label: "Deploy-ready" },
 ];
 
 export default function LandingPage() {
@@ -89,38 +49,55 @@ export default function LandingPage() {
                รวมรายละเอียดงาน ทีม ความคืบหน้า และผลงาน ไว้ในที่เดียว
             </p>
             <div className="cta-row">
-               <Link href="/portfolio" className="btn-primary">
-                  ดู Portfolio ผู้สร้าง →
+               <Link href="/about" className="btn-primary">
+                  Vexentra คืออะไร →
                </Link>
-               <Link href="/login" className="btn-ghost">
-                  เข้าสู่ระบบ
+               <Link href="/portfolio" className="btn-ghost">
+                  ดู Portfolio
                </Link>
             </div>
          </section>
 
-         <section className="landing-about">
-            <h2>Vexentra คืออะไร</h2>
-            <p>
-               เวลารับงานเข้ามา รายละเอียดกระจายอยู่หลายที่ — chat, Drive,
-               กระดาษ, หัวของเราเอง Vexentra รวมทุกอย่างของโปรเจกต์ไว้ที่เดียว
-               ตั้งแต่รับงานเข้า จนถึงส่งมอบและเก็บเป็นผลงาน
-            </p>
-         </section>
-
-         <section className="landing-features">
-            <h2 className="section-title">สิ่งที่ Vexentra ทำได้</h2>
-            <p className="section-sub">
-               ฟีเจอร์หลักของแพลตฟอร์ม (บางส่วนกำลังพัฒนา)
-            </p>
-            <div className="feature-grid">
-               {features.map((f) => (
-                  <div key={f.title} className="feature-card">
-                     {f.soon && <span className="badge">เร็ว ๆ นี้</span>}
-                     <span className="icon">{f.icon}</span>
-                     <h3>{f.title}</h3>
-                     <p>{f.desc}</p>
+         <section className="landing-milestones">
+            <div className="milestone-grid">
+               {milestones.map((m) => (
+                  <div key={m.label} className="milestone-card">
+                     <span className="milestone-value">{m.value}</span>
+                     <span className="milestone-label">{m.label}</span>
                   </div>
                ))}
+            </div>
+         </section>
+
+         <section className="landing-news">
+            <h2 className="section-title">ความเคลื่อนไหวล่าสุด</h2>
+            <p className="section-sub">
+               อัปเดต ฟีเจอร์ใหม่ และความก้าวหน้าของแพลตฟอร์ม
+            </p>
+            <div className="news-list">
+               {announcements.map((a) => (
+                  <article key={a.title} className="news-card">
+                     <div className="news-meta">
+                        <span className="news-tag">{a.tag}</span>
+                        <span className="news-date">{a.date}</span>
+                     </div>
+                     <h3 className="news-title">{a.title}</h3>
+                     <p className="news-desc">{a.desc}</p>
+                  </article>
+               ))}
+            </div>
+         </section>
+
+         <section className="landing-cta-bottom">
+            <h2>พร้อมเริ่มต้นหรือยัง?</h2>
+            <p>ดูรายละเอียดระบบหรือติดต่อเราเพื่อเริ่มใช้งาน</p>
+            <div className="cta-row">
+               <Link href="/about" className="btn-primary">
+                  ดูรายละเอียดระบบ
+               </Link>
+               <Link href="/contact" className="btn-ghost">
+                  ติดต่อเรา
+               </Link>
             </div>
          </section>
 

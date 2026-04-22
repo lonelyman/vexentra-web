@@ -3,7 +3,7 @@ import { fetchUsers, fetchMe } from "@/lib/api/client";
 import { redirect } from "next/navigation";
 import type { UserListItem } from "@/lib/api/types";
 import Link from "next/link";
-import EditUserModal from "@/components/workspace/EditUserModal";
+import CreateUserModal from "@/components/workspace/CreateUserModal";
 
 export const metadata = { title: "พนักงานทั้งหมด — Vexentra" };
 
@@ -56,6 +56,7 @@ export default async function PersonsPage({
                </h1>
                <p className="ws-page-subtitle">รายชื่อผู้ใช้งานทั้งหมดในระบบ</p>
             </div>
+            <CreateUserModal />
          </div>
 
          <div className="ws-table-wrap">
@@ -69,6 +70,7 @@ export default async function PersonsPage({
                   <table className="ws-table">
                      <thead>
                         <tr>
+                           <th>ลำดับ</th>
                            <th>Username</th>
                            <th>Email</th>
                            <th>Role</th>
@@ -80,8 +82,11 @@ export default async function PersonsPage({
                         </tr>
                      </thead>
                      <tbody>
-                        {items.map((u: UserListItem) => (
+                        {items.map((u: UserListItem, index: number) => (
                            <tr key={u.id}>
+                              <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                                 {(page - 1) * limit + index + 1}
+                              </td>
                               <td>
                                  <span style={{ fontWeight: 600, color: "var(--text)" }}>
                                     {u.username}
@@ -118,7 +123,12 @@ export default async function PersonsPage({
                                  {formatDate(u.created_at)}
                               </td>
                               <td>
-                                 <EditUserModal user={u} />
+                                 <Link
+                                    href={`/workspace/persons/${u.id}/edit`}
+                                    className="ws-btn-ghost ws-btn-sm"
+                                 >
+                                    แก้ไข
+                                 </Link>
                               </td>
                            </tr>
                         ))}
