@@ -120,25 +120,37 @@ export default async function PersonsPage({
                      </tbody>
                   </table>
 
-                  {pagination.total_pages > 1 && (
-                     <div className="ws-pagination">
-                        <span>
-                           หน้า {page} / {pagination.total_pages} ({pagination.total_records} คน)
-                        </span>
-                        <div className="ws-pagination-links">
-                           {page > 1 && (
-                              <Link href={`/workspace/persons?page=${page - 1}`} className="ws-pagination-link">
-                                 ← ก่อนหน้า
-                              </Link>
-                           )}
-                           {page < pagination.total_pages && (
-                              <Link href={`/workspace/persons?page=${page + 1}`} className="ws-pagination-link">
-                                 ถัดไป →
-                              </Link>
-                           )}
-                        </div>
+                  <div className="ws-pagination">
+                     <span>
+                        {pagination.total_records} คน · หน้า {page} / {pagination.total_pages}
+                     </span>
+                     <div className="ws-pagination-links">
+                        <Link
+                           href={`/workspace/persons?page=${page - 1}`}
+                           className="ws-pagination-link"
+                           aria-disabled={page <= 1 ? "true" : undefined}
+                        >
+                           ←
+                        </Link>
+                        {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map((p) => (
+                           <Link
+                              key={p}
+                              href={`/workspace/persons?page=${p}`}
+                              className="ws-pagination-link"
+                              style={p === page ? { background: "var(--accent)", color: "#fff", borderColor: "var(--accent)" } : undefined}
+                           >
+                              {p}
+                           </Link>
+                        ))}
+                        <Link
+                           href={`/workspace/persons?page=${page + 1}`}
+                           className="ws-pagination-link"
+                           aria-disabled={page >= pagination.total_pages ? "true" : undefined}
+                        >
+                           →
+                        </Link>
                      </div>
-                  )}
+                  </div>
                </>
             )}
          </div>
