@@ -3,6 +3,7 @@ import { fetchUsers, fetchMe } from "@/lib/api/client";
 import { redirect } from "next/navigation";
 import type { UserListItem } from "@/lib/api/types";
 import Link from "next/link";
+import EditUserModal from "@/components/workspace/EditUserModal";
 
 export const metadata = { title: "พนักงานทั้งหมด — Vexentra" };
 
@@ -75,6 +76,7 @@ export default async function PersonsPage({
                            <th>ยืนยันอีเมล</th>
                            <th>เข้าใช้ล่าสุด</th>
                            <th>สมัครเมื่อ</th>
+                           <th></th>
                         </tr>
                      </thead>
                      <tbody>
@@ -114,6 +116,9 @@ export default async function PersonsPage({
                               </td>
                               <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
                                  {formatDate(u.created_at)}
+                              </td>
+                              <td>
+                                 <EditUserModal user={u} />
                               </td>
                            </tr>
                         ))}
