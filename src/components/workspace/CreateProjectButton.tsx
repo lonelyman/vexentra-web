@@ -70,7 +70,7 @@ export default function CreateProjectButton() {
 
                   <div className="ws-form-group">
                      <label className="ws-form-label" htmlFor="proj-name">
-                        ชื่อโปรเจกต์ <span style={{ color: "#f87171" }}>*</span>
+                        ชื่อโปรเจกต์
                      </label>
                      <input
                         ref={nameRef}
@@ -86,7 +86,7 @@ export default function CreateProjectButton() {
 
                   <div className="ws-form-group">
                      <label className="ws-form-label" htmlFor="proj-desc">
-                        รายละเอียด (ไม่บังคับ)
+                        รายละเอียด
                      </label>
                      <textarea
                         id="proj-desc"

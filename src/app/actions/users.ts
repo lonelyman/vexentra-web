@@ -124,10 +124,14 @@ export async function adminUpdateProfileAction(
    if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
 
    const userId = formData.get("user_id") as string;
+   const displayName = ((formData.get("display_name") as string) || "").trim();
+   if (!displayName) return { error: "กรุณากรอกชื่อแสดงผล" };
+   const headline = ((formData.get("headline") as string) || "").trim();
+   if (!headline) return { error: "กรุณากรอก Headline" };
 
    const body = {
-      display_name: formData.get("display_name") as string,
-      headline: formData.get("headline") as string,
+      display_name: displayName,
+      headline,
       bio: formData.get("bio") as string,
       location: formData.get("location") as string,
       avatar_url: normalizeOptionalURL((formData.get("avatar_url") as string) || ""),
@@ -176,6 +180,65 @@ export async function adminAddSkillAction(
       });
       const data = await res.json();
       if (!res.ok) return { error: data.error?.message || "ไม่สามารถเพิ่มทักษะได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminUpdateSkillAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const skillId = formData.get("skill_id") as string;
+   const body = {
+      name: (formData.get("name") as string) || "",
+      category: (formData.get("category") as string) || "other",
+      proficiency: Number(formData.get("proficiency") || 3),
+      sort_order: parseSortOrder(formData.get("sort_order")),
+   };
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/skills/${skillId}`, {
+         method: "PUT",
+         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+         body: JSON.stringify(body),
+         cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: data.error?.message || "ไม่สามารถแก้ไขทักษะได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminDeleteSkillAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const skillId = formData.get("skill_id") as string;
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/skills/${skillId}`, {
+         method: "DELETE",
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+      if (!res.ok) {
+         const data = await res.json().catch(() => ({}));
+         return { error: data.error?.message || "ไม่สามารถลบทักษะได้" };
+      }
       revalidatePath(`/workspace/persons/${userId}/edit`);
       return { success: true };
    } catch {

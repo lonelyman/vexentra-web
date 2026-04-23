@@ -38,7 +38,7 @@ export default function CreateTaskModal({ projectId }: { projectId: string }) {
                   <input type="hidden" name="project_id" value={projectId} />
 
                   <div className="ws-form-group">
-                     <label className="ws-form-label">ชื่องาน *</label>
+                     <label className="ws-form-label">ชื่องาน</label>
                      <input
                         type="text"
                         name="title"

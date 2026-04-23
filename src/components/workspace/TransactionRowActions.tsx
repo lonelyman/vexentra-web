@@ -131,7 +131,7 @@ export default function TransactionRowActions({
                   </div>
 
                   <div className="ws-form-group">
-                     <label className="ws-form-label">หมายเหตุ (ถ้ามี)</label>
+                     <label className="ws-form-label">หมายเหตุ</label>
                      <textarea
                         name="note"
                         className="ws-form-textarea"

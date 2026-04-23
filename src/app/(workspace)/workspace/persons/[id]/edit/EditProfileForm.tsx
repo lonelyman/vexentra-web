@@ -32,6 +32,8 @@ export default function EditProfileForm({
                className="ws-form-input"
                defaultValue={profile?.display_name ?? ""}
                placeholder="ชื่อ-นามสกุล"
+               required
+               autoComplete="name"
             />
          </div>
 
@@ -42,6 +44,7 @@ export default function EditProfileForm({
                className="ws-form-input"
                defaultValue={profile?.headline ?? ""}
                placeholder="เช่น Full-Stack Developer"
+               required
             />
          </div>
 

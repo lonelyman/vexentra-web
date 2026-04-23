@@ -612,6 +612,48 @@
    margin-bottom: 6px;
 }
 
+.ws-form-label.ws-form-label--required::after {
+   content: "*";
+   color: var(--danger, #ef4444);
+   margin-left: 4px;
+   font-weight: 700;
+}
+
+.ws-form-label.ws-form-label--optional::after {
+   content: "(optional)";
+   color: var(--text-muted);
+   margin-left: 6px;
+   font-weight: 500;
+}
+
+.ws-form-label:not(.ws-form-label--manual):not(.ws-form-label--required):has(
+      + :is(input, select, textarea, .ws-form-input, .ws-form-select, .ws-form-textarea)[required]
+   )::after,
+.ws-form-label:not(.ws-form-label--manual):not(.ws-form-label--required):has(
+      + * :is(input, select, textarea, .ws-form-input, .ws-form-select, .ws-form-textarea)[required]
+   )::after {
+   content: "*";
+   color: var(--danger, #ef4444);
+   margin-left: 4px;
+   font-weight: 700;
+}
+
+.ws-form-label:not(.ws-form-label--manual):not(.ws-form-label--required):not(.ws-form-label--optional):has(
+      + :is(input, select, textarea, .ws-form-input, .ws-form-select, .ws-form-textarea)
+   ):not(
+      :has(+ :is(input, select, textarea, .ws-form-input, .ws-form-select, .ws-form-textarea)[required])
+   )::after,
+.ws-form-label:not(.ws-form-label--manual):not(.ws-form-label--required):not(.ws-form-label--optional):has(
+      + * :is(input, select, textarea, .ws-form-input, .ws-form-select, .ws-form-textarea)
+   ):not(
+      :has(+ * :is(input, select, textarea, .ws-form-input, .ws-form-select, .ws-form-textarea)[required])
+   )::after {
+   content: "(optional)";
+   color: var(--text-muted);
+   margin-left: 6px;
+   font-weight: 500;
+}
+
 .ws-form-input,
 .ws-form-textarea {
    width: 100%;
@@ -1203,16 +1245,20 @@ body.ws-sidebar-collapsed .ws-sidebar-divider {
    background: var(--bg2);
    border: 1px solid var(--border);
    border-radius: var(--radius);
-   padding: 32px;
+   padding: 28px;
+   display: flex;
+   flex-direction: column;
+   gap: 18px;
+   width: 100%;
    max-width: 800px;
 }
 
 .ws-card-title {
    font-size: 18px;
    font-weight: 600;
-   margin-bottom: 28px;
+   margin-bottom: 0;
    color: var(--text);
-   padding-bottom: 16px;
+   padding-bottom: 14px;
    border-bottom: 1px solid var(--border);
 }
 

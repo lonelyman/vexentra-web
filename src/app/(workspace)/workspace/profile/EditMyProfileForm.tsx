@@ -26,6 +26,8 @@ export default function EditMyProfileForm({ profile }: { profile: Profile | null
                className="ws-form-input"
                defaultValue={profile?.display_name ?? ""}
                placeholder="ชื่อ-นามสกุล"
+               required
+               autoComplete="name"
             />
          </div>
 
@@ -36,6 +38,7 @@ export default function EditMyProfileForm({ profile }: { profile: Profile | null
                className="ws-form-input"
                defaultValue={profile?.headline ?? ""}
                placeholder="เช่น Full-Stack Developer"
+               required
             />
          </div>
 
