@@ -25,7 +25,9 @@ const API_URL =
 
 export async function fetchShowcase(): Promise<FullProfileData | null> {
    try {
-      const res = await fetch(`${API_URL}/showcase`, { cache: "no-store" });
+      const res = await fetch(`${API_URL}/showcase`, {
+         next: { revalidate: 60 },
+      });
       if (!res.ok) {
          if (res.status === 404) return null;
          throw new Error(`Failed to fetch showcase: ${res.status}`);
@@ -38,10 +40,29 @@ export async function fetchShowcase(): Promise<FullProfileData | null> {
    }
 }
 
+export async function fetchShowcaseByPersonID(
+   personID: string,
+): Promise<FullProfileData | null> {
+   try {
+      const res = await fetch(`${API_URL}/showcase/${encodeURIComponent(personID)}`, {
+         next: { revalidate: 60 },
+      });
+      if (!res.ok) {
+         if (res.status === 404) return null;
+         throw new Error(`Failed to fetch showcase by person id: ${res.status}`);
+      }
+      const json = await res.json();
+      return json.data ?? null;
+   } catch (error) {
+      console.error("API Error:", error);
+      return null;
+   }
+}
+
 export async function fetchSocialPlatforms(): Promise<SocialPlatform[]> {
    try {
       const res = await fetch(`${API_URL}/social-platforms`, {
-         cache: "no-store",
+         next: { revalidate: 300 },
       });
       if (!res.ok) {
          throw new Error(`Failed to fetch social platforms: ${res.status}`);

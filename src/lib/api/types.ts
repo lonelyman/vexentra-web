@@ -63,6 +63,9 @@ export interface PortfolioItem {
    source_url: string;
    status: string;
    featured: boolean;
+   sort_order?: number;
+   started_at?: string | null;
+   ended_at?: string | null;
    tags: PortfolioTag[];
 }
 

@@ -43,6 +43,7 @@ const STATUS_COLOR: Record<string, string> = {
    bidding: "var(--gold)",
    active: "var(--teal)",
    on_hold: "#fb923c",
+   closed: "#94a3b8",
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -60,12 +61,11 @@ export default async function DashboardPage() {
    const statusItems = statusesResult.data ?? FALLBACK_PROJECT_STATUSES;
    const statusLabels = buildProjectStatusLabelMap(statusItems);
 
-   // Build a lookup map so we can display all non-closed statuses even when count = 0
+   // Build a lookup map so we can display all statuses even when count = 0
    const countMap = new Map<string, number>(
       stats.status_counts.map((s: DashboardStatusCount) => [s.status, s.count]),
    );
    const displayStatuses: ProjectStatus[] = statusItems
-      .filter((s: ProjectStatusMeta) => !s.is_terminal)
       .sort((a: ProjectStatusMeta, b: ProjectStatusMeta) => a.sort_order - b.sort_order)
       .map((s: ProjectStatusMeta) => s.status);
 
@@ -86,7 +86,9 @@ export default async function DashboardPage() {
          {/* ─── Status counts ─── */}
          <div
             className="ws-summary-grid"
-            style={{ gridTemplateColumns: "repeat(5, 1fr)" }}
+            style={{
+               gridTemplateColumns: `repeat(${Math.max(displayStatuses.length, 1)}, 1fr)`,
+            }}
          >
             {displayStatuses.map((s) => (
                <Link

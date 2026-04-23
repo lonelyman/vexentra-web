@@ -65,11 +65,13 @@ export default function PortfolioSection({
                               })}
                            </div>
                            <div className="portfolio-links">
-                              {item.status === "published" && (
+                              {item.status === "published" && (item.demo_url || item.source_url) && (
                                  <a
-                                    href={`/portfolio/${item.slug}`}
+                                    href={item.demo_url || item.source_url}
                                     className="plink"
-                                    title="ดูงาน"
+                                    title="ดูผลงาน"
+                                    target="_blank"
+                                    rel="noreferrer"
                                  >
                                     ↗
                                  </a>

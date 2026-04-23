@@ -81,6 +81,7 @@ export default async function ProjectsPage({
 
    const { items, pagination } = data;
    const totalPages = pagination.total_pages || 1;
+   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
    // Build URL helper for filter/pagination links
    function buildUrl(overrides: Partial<SearchParams>) {
@@ -219,31 +220,68 @@ export default async function ProjectsPage({
                      </tbody>
                   </table>
 
-                  {/* ─── Pagination ─── */}
-                  {totalPages > 1 && (
-                     <div className="ws-pagination">
-                        <span>
-                           หน้า {page} / {totalPages} (
-                           {pagination.total_records} รายการ)
-                        </span>
-                        <div className="ws-pagination-links">
-                           <Link
-                              href={buildUrl({ page: String(page - 1) })}
-                              className="ws-pagination-link"
-                              aria-disabled={page <= 1}
+                  <div className="ws-pagination">
+                     <span>
+                        {pagination.total_records} โปรเจกต์ · หน้า {page} /{" "}
+                        {totalPages}
+                     </span>
+                     <div className="ws-pagination-links">
+                        <Link
+                           href={buildUrl({ page: String(page - 1) })}
+                           className="ws-pagination-link"
+                           aria-disabled={page <= 1 ? "true" : undefined}
+                        >
+                           <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              style={{ width: 14, height: 14 }}
                            >
-                              ← ก่อนหน้า
-                           </Link>
+                              <path
+                                 fillRule="evenodd"
+                                 d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+                                 clipRule="evenodd"
+                              />
+                           </svg>
+                        </Link>
+                        {pageNumbers.map((p) => (
                            <Link
-                              href={buildUrl({ page: String(page + 1) })}
+                              key={p}
+                              href={buildUrl({ page: String(p) })}
                               className="ws-pagination-link"
-                              aria-disabled={page >= totalPages}
+                              style={
+                                 p === page
+                                    ? {
+                                         background: "var(--accent)",
+                                         color: "#fff",
+                                         borderColor: "var(--accent)",
+                                      }
+                                    : undefined
+                              }
                            >
-                              ถัดไป →
+                              {p}
                            </Link>
-                        </div>
+                        ))}
+                        <Link
+                           href={buildUrl({ page: String(page + 1) })}
+                           className="ws-pagination-link"
+                           aria-disabled={page >= totalPages ? "true" : undefined}
+                        >
+                           <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              style={{ width: 14, height: 14 }}
+                           >
+                              <path
+                                 fillRule="evenodd"
+                                 d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+                                 clipRule="evenodd"
+                              />
+                           </svg>
+                        </Link>
                      </div>
-                  )}
+                  </div>
                </>
             )}
          </div>

@@ -21,7 +21,7 @@ export const FALLBACK_PROJECT_STATUSES: ProjectStatusMeta[] = [
    },
    {
       status: "bidding",
-      label_th: "กำลังประมูล/เสนอราคา",
+      label_th: "ประมูล/เสนอราคา",
       phase: "pre_sales",
       sort_order: 30,
       is_terminal: false,
@@ -30,7 +30,7 @@ export const FALLBACK_PROJECT_STATUSES: ProjectStatusMeta[] = [
    },
    {
       status: "active",
-      label_th: "กำลังดำเนินการ",
+      label_th: "ดำเนินการ",
       phase: "delivery",
       sort_order: 40,
       is_terminal: false,
@@ -63,8 +63,8 @@ export function buildProjectStatusLabelMap(
    const labels: Record<ProjectStatus, string> = {
       draft: "แบบร่าง",
       planned: "วางแผน",
-      bidding: "กำลังประมูล/เสนอราคา",
-      active: "กำลังดำเนินการ",
+      bidding: "ประมูล/เสนอราคา",
+      active: "ดำเนินการ",
       on_hold: "ระงับชั่วคราว",
       closed: "ปิดโครงการ",
    };

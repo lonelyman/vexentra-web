@@ -1,10 +1,6 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 
-export default async function PublicNavbar() {
-   const token = (await cookies()).get("token")?.value;
-   const refreshToken = (await cookies()).get("refresh_token")?.value;
-   const isLoggedIn = !!(token || refreshToken);
+export default function PublicNavbar() {
 
    return (
       <nav className="public-nav">
@@ -25,11 +21,7 @@ export default async function PublicNavbar() {
                <Link href="/contact">ติดต่อเรา</Link>
             </li>
             <li>
-               {isLoggedIn ? (
-                  <Link href="/workspace">Workspace →</Link>
-               ) : (
-                  <Link href="/login">เข้าสู่ระบบ</Link>
-               )}
+               <Link href="/workspace">Workspace →</Link>
             </li>
          </ul>
       </nav>

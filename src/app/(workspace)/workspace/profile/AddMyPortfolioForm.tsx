@@ -3,16 +3,16 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-   adminAddPortfolioAction,
-   adminDeletePortfolioAction,
-   adminUpdatePortfolioAction,
-} from "@/app/actions/users";
+   addMyPortfolioAction,
+   deleteMyPortfolioAction,
+   updateMyPortfolioAction,
+} from "@/app/actions/profile";
 import type { PortfolioItem } from "@/lib/api/types";
 
-type ActionState = { error?: string; success?: boolean };
+type ActionState = { error?: string; success?: boolean; message?: string };
 const init: ActionState = {};
 
-function dateInputValue(iso: string | null | undefined): string {
+function dateInputValue(iso: string | null): string {
    if (!iso) return "";
    return iso.slice(0, 10);
 }
@@ -23,12 +23,10 @@ function statusLabel(status: string): string {
 }
 
 function PortfolioRow({
-   userId,
    item,
    editingId,
    setEditingId,
 }: {
-   userId: string;
    item: PortfolioItem;
    editingId: string | null;
    setEditingId: (id: string | null) => void;
@@ -47,7 +45,7 @@ function PortfolioRow({
    const updateAction = (formData: FormData) => {
       setUpdateError(undefined);
       startUpdate(async () => {
-         const result = await adminUpdatePortfolioAction(init, formData);
+         const result = await updateMyPortfolioAction(init, formData);
          if (result?.error) {
             setUpdateError(result.error);
             return;
@@ -60,7 +58,7 @@ function PortfolioRow({
    const deleteAction = (formData: FormData) => {
       setDeleteError(undefined);
       startDelete(async () => {
-         const result = await adminDeletePortfolioAction(init, formData);
+         const result = await deleteMyPortfolioAction(init, formData);
          if (result?.error) {
             setDeleteError(result.error);
             return;
@@ -81,7 +79,6 @@ function PortfolioRow({
                gap: 8,
             }}
          >
-            <input type="hidden" name="user_id" value={userId} />
             <input type="hidden" name="item_id" value={item.id} />
             {updateError && <div className="ws-form-error">{updateError}</div>}
 
@@ -188,7 +185,6 @@ function PortfolioRow({
                   แก้ไข
                </button>
                <form action={deleteAction}>
-                  <input type="hidden" name="user_id" value={userId} />
                   <input type="hidden" name="item_id" value={item.id} />
                   <button
                      type="submit"
@@ -206,15 +202,9 @@ function PortfolioRow({
    );
 }
 
-export default function AddPortfolioForm({
-   userId,
-   portfolio,
-}: {
-   userId: string;
-   portfolio: PortfolioItem[];
-}) {
+export default function AddMyPortfolioForm({ portfolio }: { portfolio: PortfolioItem[] }) {
    const router = useRouter();
-   const [state, action, pending] = useActionState(adminAddPortfolioAction, init);
+   const [state, action, pending] = useActionState(addMyPortfolioAction, init);
    const [editingId, setEditingId] = useState<string | null>(null);
    useEffect(() => {
       if (!state.success) return;
@@ -228,10 +218,11 @@ export default function AddPortfolioForm({
       <div style={{ display: "grid", gap: 14 }}>
          {editingId === null ? (
             <form action={action}>
-               <input type="hidden" name="user_id" value={userId} />
                {state.error && <div className="ws-form-error">{state.error}</div>}
                {state.success && (
-                  <div className="ws-ephemeral-success" style={{ color: "var(--teal)", fontSize: 13, marginBottom: 12 }}>เพิ่มผลงานเรียบร้อย</div>
+                  <div className="ws-ephemeral-success" style={{ color: "var(--teal)", fontSize: 13, marginBottom: 12 }}>
+                     เพิ่มผลงานเรียบร้อย
+                  </div>
                )}
 
                <div className="ws-form-group">
@@ -330,7 +321,6 @@ export default function AddPortfolioForm({
                   {portfolio.map((p) => (
                      <PortfolioRow
                         key={p.id}
-                        userId={userId}
                         item={p}
                         editingId={editingId}
                         setEditingId={setEditingId}

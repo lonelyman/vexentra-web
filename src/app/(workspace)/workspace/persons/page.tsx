@@ -123,12 +123,22 @@ export default async function PersonsPage({
                                  {formatDate(u.created_at)}
                               </td>
                               <td>
-                                 <Link
-                                    href={`/workspace/persons/${u.id}/edit`}
-                                    className="ws-btn-ghost ws-btn-sm"
-                                 >
-                                    แก้ไข
-                                 </Link>
+                                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                    <Link
+                                       href={`/portfolio/${u.person_id}`}
+                                       className="ws-btn-ghost ws-btn-sm"
+                                       target="_blank"
+                                       rel="noreferrer"
+                                    >
+                                       ดู
+                                    </Link>
+                                    <Link
+                                       href={`/workspace/persons/${u.id}/edit`}
+                                       className="ws-btn-ghost ws-btn-sm"
+                                    >
+                                       แก้ไข
+                                    </Link>
+                                 </div>
                               </td>
                            </tr>
                         ))}

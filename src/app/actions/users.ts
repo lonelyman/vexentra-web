@@ -16,6 +16,18 @@ function toRFC3339DateStart(date: string): string {
    return `${date}T00:00:00Z`;
 }
 
+function normalizeOptionalURL(raw: string): string {
+   const v = raw.trim();
+   if (!v) return "";
+   try {
+      const u = new URL(v);
+      if (u.protocol === "http:" || u.protocol === "https:") return v;
+      return "";
+   } catch {
+      return "";
+   }
+}
+
 export async function adminUpdateUserAction(
    _prev: ActionState,
    formData: FormData,
@@ -118,7 +130,7 @@ export async function adminUpdateProfileAction(
       headline: formData.get("headline") as string,
       bio: formData.get("bio") as string,
       location: formData.get("location") as string,
-      avatar_url: formData.get("avatar_url") as string,
+      avatar_url: normalizeOptionalURL((formData.get("avatar_url") as string) || ""),
    };
 
    try {
@@ -295,9 +307,9 @@ export async function adminAddPortfolioAction(
       title: (formData.get("title") as string) || "",
       summary: (formData.get("summary") as string) || "",
       description: (formData.get("description") as string) || "",
-      cover_image_url: (formData.get("cover_image_url") as string) || "",
-      demo_url: (formData.get("demo_url") as string) || "",
-      source_url: (formData.get("source_url") as string) || "",
+      cover_image_url: normalizeOptionalURL((formData.get("cover_image_url") as string) || ""),
+      demo_url: normalizeOptionalURL((formData.get("demo_url") as string) || ""),
+      source_url: normalizeOptionalURL((formData.get("source_url") as string) || ""),
       status: (formData.get("status") as string) || "draft",
       featured: formData.get("featured") === "on",
       sort_order: parseSortOrder(formData.get("sort_order")),
@@ -320,6 +332,84 @@ export async function adminAddPortfolioAction(
       });
       const data = await res.json();
       if (!res.ok) return { error: data.error?.message || "ไม่สามารถเพิ่มผลงานได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminUpdatePortfolioAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const itemId = formData.get("item_id") as string;
+   const startedAt = (formData.get("started_at") as string) || "";
+   const endedAt = (formData.get("ended_at") as string) || "";
+   const tagsRaw = ((formData.get("tags") as string) || "").trim();
+
+   const body = {
+      title: (formData.get("title") as string) || "",
+      summary: (formData.get("summary") as string) || "",
+      description: (formData.get("description") as string) || "",
+      cover_image_url: normalizeOptionalURL((formData.get("cover_image_url") as string) || ""),
+      demo_url: normalizeOptionalURL((formData.get("demo_url") as string) || ""),
+      source_url: normalizeOptionalURL((formData.get("source_url") as string) || ""),
+      status: (formData.get("status") as string) || "draft",
+      featured: formData.get("featured") === "on",
+      sort_order: parseSortOrder(formData.get("sort_order")),
+      started_at: startedAt ? toRFC3339DateStart(startedAt) : null,
+      ended_at: endedAt ? toRFC3339DateStart(endedAt) : null,
+      tags: tagsRaw
+         ? tagsRaw
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+         : [],
+   };
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/portfolio/${itemId}`, {
+         method: "PUT",
+         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+         body: JSON.stringify(body),
+         cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: data.error?.message || "ไม่สามารถแก้ไขผลงานได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminDeletePortfolioAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const itemId = formData.get("item_id") as string;
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/portfolio/${itemId}`, {
+         method: "DELETE",
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+
+      if (!res.ok) {
+         const data = await res.json().catch(() => ({}));
+         return { error: data.error?.message || "ไม่สามารถลบผลงานได้" };
+      }
+
       revalidatePath(`/workspace/persons/${userId}/edit`);
       return { success: true };
    } catch {
