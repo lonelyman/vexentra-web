@@ -41,13 +41,15 @@ const PRIORITY_LABEL: Record<string, string> = {
 interface Props {
    task: Task;
    projectId: string;
+   canEdit?: boolean;
 }
 
-export default function TaskCard({ task, projectId }: Props) {
+export default function TaskCard({ task, projectId, canEdit = true }: Props) {
    const router = useRouter();
    const [isPending, startTransition] = useTransition();
 
    const cycleStatus = () => {
+      if (!canEdit) return;
       const nextStatus = STATUS_NEXT[task.status];
       startTransition(async () => {
          const res = await updateTaskStatusAction(projectId, task.id, {
@@ -64,6 +66,7 @@ export default function TaskCard({ task, projectId }: Props) {
    };
 
    const handleDelete = () => {
+      if (!canEdit) return;
       if (!confirm(`ต้องการลบงาน "${task.title}" ใช่หรือไม่?`)) return;
       startTransition(async () => {
          const res = await deleteTaskAction(projectId, task.id);
@@ -85,15 +88,28 @@ export default function TaskCard({ task, projectId }: Props) {
       >
          <div className="ws-task-card-left">
             {/* Status toggle button */}
-            <button
-               className="ws-task-status-btn"
-               onClick={cycleStatus}
-               disabled={isPending || task.status === "cancelled"}
-               title={`เปลี่ยนเป็น: ${STATUS_LABEL[STATUS_NEXT[task.status]]}`}
-               style={{ color: STATUS_COLOR[task.status] }}
-            >
-               {task.status === "done" ? "✓" : task.status === "cancelled" ? "✕" : "○"}
-            </button>
+            {canEdit ? (
+               <button
+                  className="ws-task-status-btn"
+                  onClick={cycleStatus}
+                  disabled={isPending || task.status === "cancelled"}
+                  title={`เปลี่ยนเป็น: ${STATUS_LABEL[STATUS_NEXT[task.status]]}`}
+                  style={{ color: STATUS_COLOR[task.status] }}
+               >
+                  {task.status === "done" ? "✓" : task.status === "cancelled" ? "✕" : "○"}
+               </button>
+            ) : (
+               <span
+                  className="ws-task-status-btn"
+                  style={{
+                     color: STATUS_COLOR[task.status],
+                     cursor: "default",
+                     pointerEvents: "none",
+                  }}
+               >
+                  {task.status === "done" ? "✓" : task.status === "cancelled" ? "✕" : "○"}
+               </span>
+            )}
 
             <div className="ws-task-body">
                <div
@@ -140,13 +156,15 @@ export default function TaskCard({ task, projectId }: Props) {
             >
                {STATUS_LABEL[task.status]}
             </span>
-            <button
-               className="ws-btn-danger-ghost ws-btn-sm"
-               onClick={handleDelete}
-               disabled={isPending}
-            >
-               ลบ
-            </button>
+            {canEdit && (
+               <button
+                  className="ws-btn-danger-ghost ws-btn-sm"
+                  onClick={handleDelete}
+                  disabled={isPending}
+               >
+                  ลบ
+               </button>
+            )}
          </div>
       </div>
    );

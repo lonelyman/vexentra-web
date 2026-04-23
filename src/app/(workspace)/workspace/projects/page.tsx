@@ -38,6 +38,7 @@ interface SearchParams {
    page?: string;
    search?: string;
    status?: string;
+   project_kind?: string;
 }
 
 export default async function ProjectsPage({
@@ -50,6 +51,7 @@ export default async function ProjectsPage({
    const page = Math.max(1, Number(params.page) || 1);
    const search = params.search?.trim() || "";
    const status = params.status || "";
+    const projectKind = params.project_kind || "";
    const limit = 15;
 
    const [projectsResult, statusesResult] = await Promise.all([
@@ -58,6 +60,7 @@ export default async function ProjectsPage({
          limit,
          search: search || undefined,
          status: status || undefined,
+         project_kind: projectKind || undefined,
       }),
       fetchProjectStatuses(token, { activeOnly: true }),
    ]);
@@ -78,6 +81,11 @@ export default async function ProjectsPage({
          )
          .map((s: ProjectStatusMeta) => ({ value: s.status, label: s.label_th })),
    ];
+   const projectKindOptions: { value: string; label: string }[] = [
+      { value: "", label: "ทุกประเภทโครงการ" },
+      { value: "client_delivery", label: "งานลูกค้า" },
+      { value: "internal_continuous", label: "งานภายในต่อเนื่อง" },
+   ];
 
    const { items, pagination } = data;
    const totalPages = pagination.total_pages || 1;
@@ -86,9 +94,10 @@ export default async function ProjectsPage({
    // Build URL helper for filter/pagination links
    function buildUrl(overrides: Partial<SearchParams>) {
       const p = new URLSearchParams();
-      const merged = { page: String(page), search, status, ...overrides };
+      const merged = { page: String(page), search, status, project_kind: projectKind, ...overrides };
       if (merged.search) p.set("search", merged.search);
       if (merged.status) p.set("status", merged.status);
+      if (merged.project_kind) p.set("project_kind", merged.project_kind);
       if (Number(merged.page) > 1) p.set("page", merged.page!);
       const qs = p.toString();
       return `/workspace/projects${qs ? `?${qs}` : ""}`;
@@ -127,10 +136,21 @@ export default async function ProjectsPage({
                   </option>
                ))}
             </select>
+            <select
+               name="project_kind"
+               defaultValue={projectKind}
+               className="ws-filter-select"
+            >
+               {projectKindOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                     {opt.label}
+                  </option>
+               ))}
+            </select>
             <button type="submit" className="ws-btn-ghost">
                ค้นหา
             </button>
-            {(search || status) && (
+            {(search || status || projectKind) && (
                <Link href="/workspace/projects" className="ws-btn-ghost">
                   ล้างตัวกรอง
                </Link>
@@ -143,12 +163,12 @@ export default async function ProjectsPage({
                <div className="ws-empty">
                   <div className="ws-empty-icon">📂</div>
                   <div className="ws-empty-title">
-                     {search || status
+                     {search || status || projectKind
                         ? "ไม่พบโปรเจกต์ที่ตรงกับเงื่อนไข"
                         : "ยังไม่มีโปรเจกต์"}
                   </div>
                   <div className="ws-empty-desc">
-                     {search || status
+                     {search || status || projectKind
                         ? "ลองเปลี่ยนคำค้นหาหรือล้างตัวกรอง"
                         : 'กดปุ่ม "สร้างโปรเจกต์" เพื่อเริ่มต้น'}
                   </div>
@@ -160,6 +180,7 @@ export default async function ProjectsPage({
                         <tr>
                            <th>รหัส</th>
                            <th>ชื่อโปรเจกต์</th>
+                           <th>ประเภท</th>
                            <th>สถานะ</th>
                            <th>สร้างเมื่อ</th>
                            <th>อัปเดตล่าสุด</th>
@@ -192,6 +213,13 @@ export default async function ProjectsPage({
                                        </div>
                                     )}
                                  </Link>
+                              </td>
+                              <td>
+                                 <span className="ws-badge ws-badge-planned">
+                                    {p.project_kind === "internal_continuous"
+                                       ? "ภายใน"
+                                       : "ลูกค้า"}
+                                 </span>
                               </td>
                               <td>
                                  <StatusBadge

@@ -79,9 +79,9 @@ export async function transferLeadAction(
    if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
 
    const projectId = formData.get("project_id") as string;
-   const personId = (formData.get("person_id") as string)?.trim();
+   const memberId = (formData.get("member_id") as string)?.trim();
 
-   if (!projectId || !personId) return { error: "กรุณาระบุข้อมูลให้ครบถ้วน" };
+   if (!projectId || !memberId) return { error: "กรุณาระบุข้อมูลให้ครบถ้วน" };
 
    try {
       const res = await fetch(
@@ -92,7 +92,7 @@ export async function transferLeadAction(
                "Content-Type": "application/json",
                Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ person_id: personId }),
+            body: JSON.stringify({ member_id: memberId }),
             cache: "no-store",
          },
       );

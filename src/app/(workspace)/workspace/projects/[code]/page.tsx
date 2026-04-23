@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
 import {
    fetchMe,
+   fetchPersonProfile,
    fetchProjectByCode,
    fetchProjectStatuses,
    fetchTransactions,
@@ -11,6 +12,7 @@ import {
    fetchTxCategories,
    fetchTasks,
    fetchProjectFinancialPlan,
+   fetchUsersCursor,
 } from "@/lib/api/client";
 import type {
    ProjectStatus,
@@ -22,12 +24,15 @@ import type {
 } from "@/lib/api/types";
 import CreateTransactionModal from "@/components/workspace/CreateTransactionModal";
 import AddMemberModal from "@/components/workspace/AddMemberModal";
+import type { MemberPickerOption } from "@/components/workspace/AddMemberModal";
 import MemberRemoveButton from "@/components/workspace/MemberActions";
+import TransferLeadModal from "@/components/workspace/TransferLeadModal";
 import CreateTaskModal from "@/components/workspace/CreateTaskModal";
 import TaskCard from "@/components/workspace/TaskCard";
 import UpdateProjectStatusModal from "@/components/workspace/UpdateProjectStatusModal";
 import TransactionRowActions from "@/components/workspace/TransactionRowActions";
 import ProjectFinancialPlanEditor from "@/components/workspace/ProjectFinancialPlanEditor";
+import ProjectSettingsForm from "@/components/workspace/ProjectSettingsForm";
 import {
    buildProjectStatusLabelMap,
    FALLBACK_PROJECT_STATUSES,
@@ -74,13 +79,15 @@ type Tab =
    | "financial_plan"
    | "transactions"
    | "members"
-   | "tasks";
+   | "tasks"
+   | "settings";
 const TABS: { id: Tab; label: string }[] = [
    { id: "overview", label: "ภาพรวม" },
    { id: "financial_plan", label: "ค่าจ้าง/งวดรับเงิน" },
    { id: "tasks", label: "งาน" },
    { id: "transactions", label: "รายการรับ-จ่าย" },
    { id: "members", label: "สมาชิก" },
+   { id: "settings", label: "Project Settings" },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -115,6 +122,8 @@ export default async function ProjectDetailPage({
    if (pStatus === 403) handleAuthError(403, "/workspace/projects");
    const { data: me, status: meStatus } = meResult;
    if (!me) handleAuthError(meStatus, "/workspace/projects");
+   const membersResult = await fetchMembers(token, project.id);
+   const members = membersResult.data ?? [];
 
    const statusItems = statusResult.data ?? FALLBACK_PROJECT_STATUSES;
    const statusLabelMap = buildProjectStatusLabelMap(statusItems);
@@ -126,6 +135,31 @@ export default async function ProjectDetailPage({
       }));
 
    const isClosed = project.status === "closed";
+   const isStaff = me.role === "admin" || me.role === "manager";
+   const myMember = members.find((m) => m.person_id === me.person_id) ?? null;
+   const isLead = Boolean(myMember?.is_lead);
+   const isCoordinator =
+      myMember?.roles?.some((role) => role.code === "coordinator") ?? false;
+   const canManageProject = isStaff || isLead || isCoordinator;
+   const canManageWhenOpen = canManageProject && (!isClosed || isStaff);
+   const canManageMembers = canManageProject;
+   const canManageTasks = canManageProject;
+
+   const canReadByVisibility = (
+      visibility: "all_members" | "lead_coordinator_staff" | "staff_only",
+   ) => {
+      if (visibility === "all_members") return true;
+      if (visibility === "lead_coordinator_staff") {
+         return isStaff || isLead || isCoordinator;
+      }
+      return isStaff;
+   };
+   const canReadContractFinance = canReadByVisibility(
+      project.contract_finance_visibility,
+   );
+   const canReadExpenseFinance = canReadByVisibility(
+      project.expense_finance_visibility,
+   );
 
    function tabUrl(t: Tab) {
       return `/workspace/projects/${code}?tab=${t}`;
@@ -160,11 +194,13 @@ export default async function ProjectDetailPage({
                   </div>
                   <h1 className="ws-page-title">{project.name}</h1>
                </div>
-               <UpdateProjectStatusModal
-                  project={project}
-                  options={openStatusOptions}
-                  canEditClosedStatus={me.role === "admin"}
-               />
+               {canManageProject && (
+                  <UpdateProjectStatusModal
+                     project={project}
+                     options={openStatusOptions}
+                     canEditClosedStatus={me.role === "admin"}
+                  />
+               )}
             </div>
 
             <nav className="ws-tabs">
@@ -179,6 +215,15 @@ export default async function ProjectDetailPage({
                ))}
             </nav>
 
+            {!canManageProject && (
+               <div className="ws-empty" style={{ marginBottom: 16 }}>
+                  <div className="ws-empty-title">สิทธิ์ของคุณ: สมาชิก (อ่านอย่างเดียว)</div>
+                  <div className="ws-empty-desc">
+                     โปรเจกต์นี้แก้ไขได้เฉพาะ Lead, Coordinator หรือ Staff เท่านั้น
+                  </div>
+               </div>
+            )}
+
             <div className="ws-detail-grid">
                <div className="ws-detail-card">
                   <div className="ws-detail-field-label">สถานะ</div>
@@ -187,6 +232,15 @@ export default async function ProjectDetailPage({
                         status={project.status}
                         labels={statusLabelMap}
                      />
+                  </div>
+               </div>
+
+               <div className="ws-detail-card">
+                  <div className="ws-detail-field-label">ประเภทโครงการ</div>
+                  <div className="ws-detail-field-value">
+                     {project.project_kind === "internal_continuous"
+                        ? "งานภายในต่อเนื่อง"
+                        : "งานลูกค้า"}
                   </div>
                </div>
 
@@ -276,7 +330,10 @@ export default async function ProjectDetailPage({
    }
 
    if (tab === "financial_plan") {
-      const { data: planData } = await fetchProjectFinancialPlan(token, project.id);
+      const planResult = canReadContractFinance
+         ? await fetchProjectFinancialPlan(token, project.id)
+         : { data: null, status: 403 };
+      const planData = planResult.data;
 
       return (
          <main className="ws-page">
@@ -318,12 +375,32 @@ export default async function ProjectDetailPage({
                ))}
             </nav>
 
-            <ProjectFinancialPlanEditor
-               projectId={project.id}
-               projectCode={project.project_code}
-               initialPlan={planData}
-               canEdit={!isClosed || me.role === "admin"}
-            />
+            {!canReadContractFinance ? (
+               <div className="ws-empty">
+                  <div className="ws-empty-title">ไม่มีสิทธิ์ดูข้อมูลค่าจ้าง</div>
+                  <div className="ws-empty-desc">
+                     กติกาโปรเจกต์กำหนดให้ข้อมูลส่วนว่าจ้างดูได้เฉพาะบางบทบาท
+                  </div>
+               </div>
+            ) : (
+               <>
+                  {!canManageWhenOpen && (
+                     <div className="ws-empty" style={{ marginBottom: 12 }}>
+                        <div className="ws-empty-title">โหมดอ่านอย่างเดียว</div>
+                        <div className="ws-empty-desc">
+                           คุณดูแผนค่าจ้างได้ แต่ไม่สามารถแก้ไขได้ตามสิทธิ์ปัจจุบัน
+                        </div>
+                     </div>
+                  )}
+                  <ProjectFinancialPlanEditor
+                     projectId={project.id}
+                     projectCode={project.project_code}
+                     projectKind={project.project_kind}
+                     initialPlan={planData}
+                     canEdit={canManageWhenOpen}
+                  />
+               </>
+            )}
          </main>
       );
    }
@@ -339,7 +416,10 @@ export default async function ProjectDetailPage({
 
       const txData = txResult.data;
       const summary = summaryResult.data;
-      const categories = catResult.data ?? [];
+      const allCategories = catResult.data ?? [];
+      const categories = canReadExpenseFinance
+         ? allCategories
+         : allCategories.filter((cat) => cat.type === "income");
 
       const transactions = txData?.items ?? [];
       const pagination = txData?.pagination;
@@ -390,6 +470,24 @@ export default async function ProjectDetailPage({
                ))}
             </nav>
 
+            {!canReadExpenseFinance && (
+               <div className="ws-empty" style={{ marginBottom: 12 }}>
+                  <div className="ws-empty-title">แสดงเฉพาะส่วนที่มีสิทธิ์</div>
+                  <div className="ws-empty-desc">
+                     คุณไม่มีสิทธิ์ดูข้อมูลค่าใช้จ่าย จึงเห็นเฉพาะรายการรายรับ
+                  </div>
+               </div>
+            )}
+
+            {!canManageWhenOpen && (
+               <div className="ws-empty" style={{ marginBottom: 12 }}>
+                  <div className="ws-empty-title">โหมดอ่านอย่างเดียว</div>
+                  <div className="ws-empty-desc">
+                     คุณสามารถดูรายการได้ แต่ไม่สามารถเพิ่ม/แก้ไข/ลบธุรกรรม
+                  </div>
+               </div>
+            )}
+
             {/* Summary cards */}
             {summary && (
                <div className="ws-summary-grid">
@@ -399,14 +497,18 @@ export default async function ProjectDetailPage({
                         ฿{formatAmount(summary.income)}
                      </div>
                   </div>
-                  <div className="ws-summary-card">
-                     <div className="ws-summary-label">รายจ่าย</div>
-                     <div className="ws-summary-amount ws-summary-expense">
-                        ฿{formatAmount(summary.expense)}
+                  {canReadExpenseFinance && (
+                     <div className="ws-summary-card">
+                        <div className="ws-summary-label">รายจ่าย</div>
+                        <div className="ws-summary-amount ws-summary-expense">
+                           ฿{formatAmount(summary.expense)}
+                        </div>
                      </div>
-                  </div>
+                  )}
                   <div className="ws-summary-card">
-                     <div className="ws-summary-label">คงเหลือ (สุทธิ)</div>
+                     <div className="ws-summary-label">
+                        {canReadExpenseFinance ? "คงเหลือ (สุทธิ)" : "คงเหลือ (เฉพาะที่เห็น)"}
+                     </div>
                      <div
                         className={`ws-summary-amount ${
                            net >= 0
@@ -433,11 +535,13 @@ export default async function ProjectDetailPage({
                   >
                      ↓ Export CSV
                   </a>
-                  <CreateTransactionModal
-                     projectId={project.id}
-                     categories={categories}
-                     disabled={isClosed}
-                  />
+                  {canManageWhenOpen && (
+                     <CreateTransactionModal
+                        projectId={project.id}
+                        categories={categories}
+                        disabled={false}
+                     />
+                  )}
                </div>
             </div>
 
@@ -518,12 +622,16 @@ export default async function ProjectDetailPage({
                                        </span>
                                     </td>
                                     <td style={{ textAlign: "right" }}>
-                                       <TransactionRowActions
-                                          projectId={project.id}
-                                          tx={tx}
-                                          categories={categories}
-                                          disabled={isClosed}
-                                       />
+                                       {canManageWhenOpen ? (
+                                          <TransactionRowActions
+                                             projectId={project.id}
+                                             tx={tx}
+                                             categories={categories}
+                                             disabled={false}
+                                          />
+                                       ) : (
+                                          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>—</span>
+                                       )}
                                     </td>
                                  </tr>
                               );
@@ -630,11 +738,20 @@ export default async function ProjectDetailPage({
                ))}
             </nav>
 
+            {!canManageTasks && (
+               <div className="ws-empty" style={{ marginBottom: 12 }}>
+                  <div className="ws-empty-title">โหมดอ่านอย่างเดียว</div>
+                  <div className="ws-empty-desc">
+                     คุณดูงานได้ แต่ไม่สามารถสร้าง แก้ไข หรือลบงาน
+                  </div>
+               </div>
+            )}
+
             <div className="ws-page-header" style={{ marginBottom: 20 }}>
                <p className="ws-page-subtitle">
                   {tasks.length} งาน · {activeTasks} รายการที่ยังค้างอยู่
                </p>
-               <CreateTaskModal projectId={project.id} />
+               {canManageTasks && <CreateTaskModal projectId={project.id} />}
             </div>
 
             {tasks.length === 0 ? (
@@ -665,6 +782,7 @@ export default async function ProjectDetailPage({
                                  key={t.id}
                                  task={t}
                                  projectId={project.id}
+                                 canEdit={canManageTasks}
                               />
                            ))}
                         </div>
@@ -676,10 +794,109 @@ export default async function ProjectDetailPage({
       );
    }
 
-   // ─── Members Tab ──────────────────────────────────────────────────────────
+   if (tab === "settings") {
+      return (
+         <main className="ws-page">
+            <Link href="/workspace/projects" className="ws-back-link">
+               ← กลับรายการโปรเจกต์
+            </Link>
 
-   const { data: membersData } = await fetchMembers(token, project.id);
-   const members = membersData ?? [];
+            <div className="ws-page-header">
+               <div>
+                  <div
+                     style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 6,
+                     }}
+                  >
+                     <span className="ws-project-code">
+                        {project.project_code}
+                     </span>
+                     <StatusBadge
+                        status={project.status}
+                        labels={statusLabelMap}
+                     />
+                  </div>
+                  <h1 className="ws-page-title">{project.name}</h1>
+               </div>
+            </div>
+
+            <nav className="ws-tabs">
+               {TABS.map((t) => (
+                  <Link
+                     key={t.id}
+                     href={tabUrl(t.id)}
+                     className={`ws-tab ${tab === t.id ? "active" : ""}`}
+                  >
+                     {t.label}
+                  </Link>
+               ))}
+            </nav>
+
+            <div className="ws-empty" style={{ marginBottom: 12 }}>
+               <div className="ws-empty-title">คำอธิบายกติกาสิทธิ์การเงิน</div>
+               <div className="ws-empty-desc">
+                  ส่วนว่าจ้างและค่าใช้จ่ายแยกสิทธิ์กันได้: สมาชิกทุกคน / Lead-Coordinator-Staff / Staff เท่านั้น
+               </div>
+            </div>
+
+            <ProjectSettingsForm
+               project={project}
+               canEdit={canManageWhenOpen}
+            />
+         </main>
+      );
+   }
+
+   // ─── Members Tab ──────────────────────────────────────────────────────────
+   const { data: usersData } = await fetchUsersCursor(token, {
+      cursor: "",
+      limit: 20,
+      status: "active",
+   });
+   const activeUsers = usersData?.items ?? [];
+
+   const candidateProfiles = await Promise.all(
+      activeUsers.map(async (u) => {
+         const { data: fullProfile } = await fetchPersonProfile(token, u.person_id);
+         return {
+            person_id: u.person_id,
+            username: u.username,
+            email: u.email,
+            display_name: fullProfile?.profile?.display_name || u.username,
+            headline: fullProfile?.profile?.headline || "",
+            avatar_url: fullProfile?.profile?.avatar_url || "",
+         } satisfies MemberPickerOption;
+      }),
+   );
+
+   const memberInfoByPersonId = new Map(
+      candidateProfiles.map((c) => [c.person_id, c] as const),
+   );
+   const missingMemberPersonIds = members
+      .map((m) => m.person_id)
+      .filter((personId) => !memberInfoByPersonId.has(personId));
+
+   if (missingMemberPersonIds.length > 0) {
+      const missingProfiles = await Promise.all(
+         missingMemberPersonIds.map(async (personId) => {
+            const { data: fullProfile } = await fetchPersonProfile(token, personId);
+            return {
+               person_id: personId,
+               username: personId.slice(0, 8),
+               email: "",
+               display_name: fullProfile?.profile?.display_name || personId.slice(0, 8),
+               headline: fullProfile?.profile?.headline || "",
+               avatar_url: fullProfile?.profile?.avatar_url || "",
+            } satisfies MemberPickerOption;
+         }),
+      );
+      for (const p of missingProfiles) {
+         memberInfoByPersonId.set(p.person_id, p);
+      }
+   }
 
    return (
       <main className="ws-page">
@@ -718,9 +935,26 @@ export default async function ProjectDetailPage({
             ))}
          </nav>
 
+         {!canManageMembers && (
+            <div className="ws-empty" style={{ marginBottom: 12 }}>
+               <div className="ws-empty-title">โหมดอ่านอย่างเดียว</div>
+               <div className="ws-empty-desc">
+                  คุณดูสมาชิกได้ แต่ไม่สามารถเพิ่ม ลบ หรือโอนสิทธิ์หัวหน้าทีม
+               </div>
+            </div>
+         )}
+
          <div className="ws-page-header" style={{ marginBottom: 16 }}>
             <p className="ws-page-subtitle">{members.length} สมาชิก</p>
-            <AddMemberModal projectId={project.id} />
+            {canManageMembers && (
+               <AddMemberModal
+                  projectId={project.id}
+                  initialCandidates={candidateProfiles}
+                  initialNextCursor={usersData?.pagination?.next_cursor ?? null}
+                  initialHasMore={Boolean(usersData?.pagination?.has_more)}
+                  existingPersonIds={members.map((m) => m.person_id)}
+               />
+            )}
          </div>
 
          <div className="ws-member-list">
@@ -735,28 +969,67 @@ export default async function ProjectDetailPage({
             ) : (
                members.map((m: Member) => (
                   <div key={m.id} className="ws-member-row">
-                     <div className="ws-member-avatar">
-                        {m.person_id.slice(0, 1).toUpperCase()}
-                     </div>
-                     <div className="ws-member-info">
-                        <div className="ws-member-badges">
-                           {m.is_lead && (
-                              <span className="ws-lead-badge">LEAD</span>
-                           )}
-                        </div>
-                        <div className="ws-member-id">{m.person_id}</div>
-                        <div
-                           style={{
-                              fontSize: 11,
-                              color: "var(--text-dim)",
-                              marginTop: 2,
-                           }}
-                        >
-                           เข้าร่วม {formatDate(m.joined_at)}
-                        </div>
-                     </div>
+                     {(() => {
+                        const info = memberInfoByPersonId.get(m.person_id);
+                        const displayName = info?.display_name || m.person_id;
+                        const initial = displayName.slice(0, 1).toUpperCase();
+                        return (
+                           <>
+                              <div className="ws-member-avatar">
+                                 {info?.avatar_url ? (
+                                    <img
+                                       src={info.avatar_url}
+                                       alt={displayName}
+                                       className="ws-member-avatar-img"
+                                    />
+                                 ) : (
+                                    initial
+                                 )}
+                              </div>
+                              <div className="ws-member-info">
+                                 <div className="ws-member-badges">
+                                    <div className="ws-member-name">{displayName}</div>
+                                    {m.is_lead && (
+                                       <span className="ws-lead-badge">LEAD</span>
+                                    )}
+                                 </div>
+                                 {info?.headline ? (
+                                    <div className="ws-member-headline">{info.headline}</div>
+                                 ) : null}
+                                 <div className="ws-member-id">{m.person_id}</div>
+                                 <div
+                                    style={{
+                                       fontSize: 11,
+                                       color: "var(--text-dim)",
+                                       marginTop: 2,
+                                    }}
+                                 >
+                                    เข้าร่วม {formatDate(m.joined_at)}
+                                 </div>
+                              </div>
+                           </>
+                        );
+                     })()}
                      <div className="ws-member-actions">
-                        <MemberRemoveButton projectId={project.id} member={m} />
+                        {canManageMembers && m.is_lead ? (
+                           <TransferLeadModal
+                              projectId={project.id}
+                              currentLeadLabel={memberInfoByPersonId.get(m.person_id)?.display_name || m.person_id}
+                              candidates={members
+                                 .filter((x) => x.person_id !== m.person_id)
+                                 .map((x) => ({
+                                    member_id: x.id,
+                                    label: memberInfoByPersonId.get(x.person_id)?.display_name || x.person_id,
+                                 }))}
+                           />
+                        ) : null}
+                        {canManageMembers && (
+                           <MemberRemoveButton
+                              projectId={project.id}
+                              member={m}
+                              memberLabel={memberInfoByPersonId.get(m.person_id)?.display_name || m.person_id}
+                           />
+                        )}
                      </div>
                   </div>
                ))

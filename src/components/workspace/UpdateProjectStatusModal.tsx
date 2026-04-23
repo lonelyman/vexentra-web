@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProjectStatusAction } from "@/app/actions/projects";
-import type { ProjectStatus } from "@/lib/api/types";
+import type { ProjectKind, ProjectStatus } from "@/lib/api/types";
 
 type ActionState = { error?: string; success?: boolean };
 
@@ -23,6 +23,7 @@ interface UpdateProjectStatusModalProps {
       id: string;
       project_code: string;
       name: string;
+      project_kind: ProjectKind;
       status: ProjectStatus;
       description: string | null;
       client_person_id: string | null;
@@ -44,6 +45,9 @@ export default function UpdateProjectStatusModal({
    const backdropRef = useRef<HTMLDivElement>(null);
    const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>(
       project.status,
+   );
+   const [selectedProjectKind, setSelectedProjectKind] = useState<ProjectKind>(
+      project.project_kind,
    );
    const [state, action, pending] = useActionState(
       updateProjectStatusAction,
@@ -127,6 +131,25 @@ export default function UpdateProjectStatusModal({
                   )}
 
                   <div className="ws-form-group">
+                     <label className="ws-form-label" htmlFor="project-kind">
+                        ประเภทโครงการ
+                     </label>
+                     <select
+                        id="project-kind"
+                        name="project_kind"
+                        className="ws-form-select"
+                        value={selectedProjectKind}
+                        onChange={(e) =>
+                           setSelectedProjectKind(e.target.value as ProjectKind)
+                        }
+                        disabled={pending}
+                     >
+                        <option value="client_delivery">งานลูกค้า (Client Delivery)</option>
+                        <option value="internal_continuous">งานภายในต่อเนื่อง (Internal)</option>
+                     </select>
+                  </div>
+
+                  <div className="ws-form-group">
                      <label className="ws-form-label" htmlFor="project-status">
                         สถานะใหม่
                      </label>
@@ -147,6 +170,12 @@ export default function UpdateProjectStatusModal({
                         ))}
                      </select>
                   </div>
+
+                  {selectedProjectKind === "internal_continuous" && (
+                     <div className="ws-form-help">
+                        โหมดงานภายใน: อนุญาต active/on_hold โดยไม่ต้องระบุลูกค้า
+                     </div>
+                  )}
 
                   {selectedStatus === "closed" && (
                      <>

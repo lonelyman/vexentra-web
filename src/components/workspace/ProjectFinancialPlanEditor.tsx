@@ -3,7 +3,11 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertProjectFinancialPlanAction } from "@/app/actions/projects";
-import type { ProjectFinancialPlan, ProjectPaymentInstallment } from "@/lib/api/types";
+import type {
+   ProjectFinancialPlan,
+   ProjectKind,
+   ProjectPaymentInstallment,
+} from "@/lib/api/types";
 
 type ActionState = { error?: string; success?: boolean };
 const initialState: ActionState = {};
@@ -20,6 +24,7 @@ interface InstallmentFormItem {
 interface Props {
    projectId: string;
    projectCode: string;
+   projectKind: ProjectKind;
    initialPlan: ProjectFinancialPlan | null;
    canEdit: boolean;
 }
@@ -49,6 +54,7 @@ function fromApiInstallments(items: ProjectPaymentInstallment[] | undefined): In
 export default function ProjectFinancialPlanEditor({
    projectId,
    projectCode,
+   projectKind,
    initialPlan,
    canEdit,
 }: Props) {
@@ -75,6 +81,8 @@ export default function ProjectFinancialPlanEditor({
       () => JSON.stringify(installments),
       [installments],
    );
+   const isInternalProject = projectKind === "internal_continuous";
+   const submittedInstallmentsJSON = isInternalProject ? "[]" : installmentsJSON;
 
    const plannedTotal = installments.reduce((sum, item) => {
       const n = Number(item.amount || 0);
@@ -119,7 +127,11 @@ export default function ProjectFinancialPlanEditor({
       <form action={action} className="ws-fin-card">
          <input type="hidden" name="project_id" value={projectId} />
          <input type="hidden" name="project_code" value={projectCode} />
-         <input type="hidden" name="installments_json" value={installmentsJSON} />
+         <input
+            type="hidden"
+            name="installments_json"
+            value={submittedInstallmentsJSON}
+         />
 
          <div className="ws-fin-grid">
             <div className="ws-form-group">
@@ -149,17 +161,25 @@ export default function ProjectFinancialPlanEditor({
                />
             </div>
 
-            <div className="ws-form-group">
-               <label className="ws-form-label">กำหนดส่งมอบงานรวม</label>
-               <input
-                  type="date"
-                  name="planned_delivery_date"
-                  className="ws-form-input"
-                  defaultValue={plannedDeliveryDate}
-                  disabled={!canEdit || pending}
-               />
-            </div>
+            {!isInternalProject && (
+               <div className="ws-form-group">
+                  <label className="ws-form-label">กำหนดส่งมอบงานรวม</label>
+                  <input
+                     type="date"
+                     name="planned_delivery_date"
+                     className="ws-form-input"
+                     defaultValue={plannedDeliveryDate}
+                     disabled={!canEdit || pending}
+                  />
+               </div>
+            )}
          </div>
+
+         {isInternalProject && (
+            <div className="ws-form-help" style={{ marginBottom: 14 }}>
+               โปรเจกต์ภายใน: ซ่อนงวดรับเงินและวันส่งมอบรวม
+            </div>
+         )}
 
          <div className="ws-form-group">
             <label className="ws-form-label">เงื่อนไขการชำระเงิน</label>
@@ -173,27 +193,30 @@ export default function ProjectFinancialPlanEditor({
             />
          </div>
 
-         <div className="ws-fin-subheader">
-            <div className="ws-fin-subtitle">งวดรับเงิน</div>
-            <button
-               type="button"
-               className="ws-btn-ghost ws-btn-sm"
-               onClick={addInstallment}
-               disabled={!canEdit || pending}
-            >
-               + เพิ่มงวด
-            </button>
-         </div>
-
-         {installments.length === 0 ? (
-            <div className="ws-empty" style={{ marginBottom: 14 }}>
-               <div className="ws-empty-title">ยังไม่มีงวดรับเงิน</div>
-               <div className="ws-empty-desc">เพิ่มงวดเพื่อระบุวันส่งงานและวันรับเงิน</div>
+         {!isInternalProject && (
+            <div className="ws-fin-subheader">
+               <div className="ws-fin-subtitle">งวดรับเงิน</div>
+               <button
+                  type="button"
+                  className="ws-btn-ghost ws-btn-sm"
+                  onClick={addInstallment}
+                  disabled={!canEdit || pending}
+               >
+                  + เพิ่มงวด
+               </button>
             </div>
-         ) : (
-            <div className="ws-fin-list">
-               {installments.map((item, idx) => (
-                  <div key={`installment-${idx}`} className="ws-fin-item">
+         )}
+
+         {!isInternalProject &&
+            (installments.length === 0 ? (
+               <div className="ws-empty" style={{ marginBottom: 14 }}>
+                  <div className="ws-empty-title">ยังไม่มีงวดรับเงิน</div>
+                  <div className="ws-empty-desc">เพิ่มงวดเพื่อระบุวันส่งงานและวันรับเงิน</div>
+               </div>
+            ) : (
+               <div className="ws-fin-list">
+                  {installments.map((item, idx) => (
+                     <div key={`installment-${idx}`} className="ws-fin-item">
                      <div className="ws-fin-item-head">
                         <span>งวดที่ {idx + 1}</span>
                         <button
@@ -277,10 +300,10 @@ export default function ProjectFinancialPlanEditor({
                            disabled={!canEdit || pending}
                         />
                      </div>
-                  </div>
-               ))}
-            </div>
-         )}
+                     </div>
+                  ))}
+               </div>
+            ))}
 
          <div className="ws-summary-grid" style={{ marginTop: 16 }}>
             <div className="ws-summary-card">
