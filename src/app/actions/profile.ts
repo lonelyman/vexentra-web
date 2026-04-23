@@ -118,6 +118,12 @@ export async function changeMyPasswordAction(
       if (!res.ok) {
          return { error: data.error?.message || "ไม่สามารถเปลี่ยนรหัสผ่านได้" };
       }
+      (await cookies()).set("force_password_change", "0", {
+         httpOnly: true,
+         secure: process.env.NODE_ENV === "production",
+         sameSite: "lax",
+         path: "/",
+      });
       return { success: true, message: "เปลี่ยนรหัสผ่านเรียบร้อย" };
    } catch {
       return { error: "ไม่สามารถเชื่อมต่อระบบได้" };

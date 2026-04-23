@@ -87,6 +87,8 @@ export interface UserListItem {
    role: string;
    status: string;
    is_email_verified: boolean;
+   force_password_change: boolean;
+   password_changed_at: string | null;
    last_login_at: string | null;
    created_at: string;
 }
@@ -109,6 +111,8 @@ export interface UserMe {
    role: string;
    status: string;
    is_email_verified: boolean;
+   force_password_change: boolean;
+   password_changed_at: string | null;
    last_login_at: string | null;
    created_at: string;
 }

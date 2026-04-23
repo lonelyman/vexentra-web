@@ -60,6 +60,19 @@ export async function loginAction(_prevState: LoginActionState, formData: FormDa
          cookieStore.set("refresh_token", data.data.refresh_token, baseCookie);
          cookieStore.set("remember_login", "0", baseCookie);
       }
+      const requirePasswordChange = data?.data?.force_password_change === true;
+      if (rememberLogin) {
+         cookieStore.set("force_password_change", requirePasswordChange ? "1" : "0", {
+            ...baseCookie,
+            maxAge: REFRESH_TOKEN_MAX_AGE,
+         });
+      } else {
+         cookieStore.set("force_password_change", requirePasswordChange ? "1" : "0", baseCookie);
+      }
+
+      if (requirePasswordChange) {
+         redirect("/force-change-password");
+      }
    } catch (error) {
       console.error("Login Error:", error);
       return { error: "ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่ภายหลัง" };
@@ -74,6 +87,7 @@ export async function logoutAction() {
    cookieStore.delete("token");
    cookieStore.delete("refresh_token");
    cookieStore.delete("remember_login");
+   cookieStore.delete("force_password_change");
    redirect("/login");
 }
 

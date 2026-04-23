@@ -33,6 +33,9 @@ export default function CreateUserModal() {
          <div ref={backdropRef} className="ws-dialog-backdrop">
             <div className="ws-dialog">
                <div className="ws-dialog-title">เพิ่มพนักงานใหม่</div>
+               <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>
+                  ระบบจะส่งอีเมลยืนยันบัญชีให้สมาชิก และผู้ใช้จะเข้าใช้งานได้หลังยืนยันอีเมลแล้วเท่านั้น
+               </p>
 
                {state.error && <div className="ws-form-error">{state.error}</div>}
 

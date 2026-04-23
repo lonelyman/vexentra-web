@@ -2,6 +2,8 @@ import { fetchMe } from "@/lib/api/client";
 import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
 import WorkspaceSidebar from "@/components/workspace/WorkspaceSidebar";
 import "@/styles/workspace.css";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function WorkspaceLayout({
    children,
@@ -9,6 +11,10 @@ export default async function WorkspaceLayout({
    children: React.ReactNode;
 }) {
    const token = await requireAuth("/workspace/projects");
+   const forcePasswordChange = (await cookies()).get("force_password_change")?.value === "1";
+   if (forcePasswordChange) {
+      redirect("/force-change-password");
+   }
 
    const { data: me, status } = await fetchMe(token);
    if (!me) handleAuthError(status, "/workspace/projects");

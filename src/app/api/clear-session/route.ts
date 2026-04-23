@@ -6,5 +6,6 @@ export async function GET() {
    cookieStore.delete("token");
    cookieStore.delete("refresh_token");
    cookieStore.delete("remember_login");
+   cookieStore.delete("force_password_change");
    redirect("/login");
 }

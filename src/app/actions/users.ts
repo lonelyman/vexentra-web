@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 const API_URL = process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
 
-type ActionState = { error?: string; success?: boolean };
+type ActionState = { error?: string; success?: boolean; message?: string };
 
 function parseSortOrder(v: FormDataEntryValue | null): number {
    const n = Number(v ?? 0);
@@ -111,6 +111,33 @@ export async function adminSetUserPasswordAction(
 
       revalidatePath(`/workspace/persons/${userId}/edit`);
       return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminResendVerifyEmailAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/resend-verify`, {
+         method: "POST",
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: data.error?.message || "ไม่สามารถส่งอีเมลยืนยันได้" };
+
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      revalidatePath("/workspace/persons");
+      return { success: true, message: data?.data?.message || "ส่งอีเมลยืนยันอีกครั้งเรียบร้อย" };
    } catch {
       return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
    }

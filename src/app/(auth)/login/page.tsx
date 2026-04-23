@@ -4,7 +4,10 @@ import LoginForm from "@/components/admin/LoginForm";
 import Link from "next/link";
 
 export default async function LoginPage() {
-   const token = (await cookies()).get("token")?.value;
+   const cookieStore = await cookies();
+   const token = cookieStore.get("token")?.value;
+   const forcePasswordChange = cookieStore.get("force_password_change")?.value === "1";
+   if (token && forcePasswordChange) redirect("/force-change-password");
    if (token) redirect("/workspace/projects");
 
    return (

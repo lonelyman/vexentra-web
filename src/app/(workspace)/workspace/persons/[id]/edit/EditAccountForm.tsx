@@ -1,14 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { adminUpdateUserAction } from "@/app/actions/users";
+import { adminResendVerifyEmailAction, adminUpdateUserAction } from "@/app/actions/users";
 import type { UserMe } from "@/lib/api/types";
 
-type ActionState = { error?: string; success?: boolean };
+type ActionState = { error?: string; success?: boolean; message?: string };
 const init: ActionState = {};
 
 export default function EditAccountForm({ user }: { user: UserMe }) {
    const [state, action, pending] = useActionState(adminUpdateUserAction, init);
+   const [resendState, resendAction, resendPending] = useActionState(adminResendVerifyEmailAction, init);
 
    return (
       <form action={action}>
@@ -17,6 +18,12 @@ export default function EditAccountForm({ user }: { user: UserMe }) {
          {state.error && <div className="ws-form-error">{state.error}</div>}
          {state.success && (
             <div style={{ color: "var(--teal)", fontSize: 13, marginBottom: 12 }}>บันทึกข้อมูลบัญชีเรียบร้อย</div>
+         )}
+         {resendState.error && <div className="ws-form-error">{resendState.error}</div>}
+         {resendState.success && (
+            <div style={{ color: "var(--teal)", fontSize: 13, marginBottom: 12 }}>
+               {resendState.message || "ส่งอีเมลยืนยันอีกครั้งเรียบร้อย"}
+            </div>
          )}
 
          <div className="ws-form-group">
@@ -38,9 +45,21 @@ export default function EditAccountForm({ user }: { user: UserMe }) {
          </div>
 
          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-            <button type="submit" className="ws-btn-primary" disabled={pending}>
-               {pending ? "กำลังบันทึก..." : "บันทึกบัญชี"}
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+               {!user.is_email_verified && (
+                  <button
+                     type="submit"
+                     formAction={resendAction}
+                     className="ws-btn-ghost"
+                     disabled={resendPending}
+                  >
+                     {resendPending ? "กำลังส่ง..." : "ส่งอีเมลยืนยันอีกครั้ง"}
+                  </button>
+               )}
+               <button type="submit" className="ws-btn-primary" disabled={pending}>
+                  {pending ? "กำลังบันทึก..." : "บันทึกบัญชี"}
+               </button>
+            </div>
          </div>
       </form>
    );
