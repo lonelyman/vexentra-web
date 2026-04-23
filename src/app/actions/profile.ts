@@ -32,13 +32,32 @@ async function getToken(): Promise<string | null> {
    return (await cookies()).get("token")?.value ?? null;
 }
 
+function inferMimeByFilename(filename: string): string {
+   const lower = filename.trim().toLowerCase();
+   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+   if (lower.endsWith(".png")) return "image/png";
+   if (lower.endsWith(".webp")) return "image/webp";
+   return "";
+}
+
+function normalizeImageMime(rawMime: string, filename: string): string {
+   const mime = (rawMime || "").trim().toLowerCase();
+   if (mime === "image/jpg") return "image/jpeg";
+   if (mime === "image/jpeg" || mime === "image/png" || mime === "image/webp") return mime;
+   return inferMimeByFilename(filename);
+}
+
 async function uploadProfileImage(
    token: string,
    file: File,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-   const mimeType = (file.type || "").trim().toLowerCase();
    const filename = file.name || "upload";
+   const mimeType = normalizeImageMime(file.type, filename);
    const sizeBytes = file.size || 0;
+
+   if (!mimeType) {
+      return { ok: false, error: "รองรับเฉพาะไฟล์ JPEG, PNG, WEBP" };
+   }
 
    const presignRes = await fetch(`${API_URL}/uploads/presign`, {
       method: "POST",
@@ -103,6 +122,28 @@ export async function updateProfileAction(
 ): Promise<ActionState> {
    const token = await getToken();
    if (!token) return { error: "ไม่พบการยืนยันตัวตน กรุณาล็อกอินใหม่" };
+   const actionType = ((formData.get("action_type") as string) || "save").trim();
+   const avatarDeletePending = ((formData.get("avatar_delete_pending") as string) || "0").trim() === "1";
+   const avatarFileId = ((formData.get("avatar_file_id") as string) || "").trim();
+
+   if (actionType === "delete_avatar") {
+      if (!avatarFileId) return { error: "ไม่พบรูปโปรไฟล์ที่ต้องการลบ" };
+
+      try {
+         const delRes = await fetch(`${API_URL}/files/${avatarFileId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+         });
+         const delData = await delRes.json().catch(() => ({}));
+         if (!delRes.ok) return { error: delData.error?.message || "ลบรูปโปรไฟล์ไม่สำเร็จ" };
+
+         revalidateMyProfilePages();
+         return { success: true, message: "ลบรูปโปรไฟล์เรียบร้อยแล้ว" };
+      } catch {
+         return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+      }
+   }
 
    const displayName = ((formData.get("display_name") as string) || "").trim();
    if (!displayName) {
@@ -137,6 +178,18 @@ export async function updateProfileAction(
       }
 
       const avatarFile = formData.get("avatar_file");
+      if (avatarDeletePending && avatarFileId && !(avatarFile instanceof File && avatarFile.size > 0)) {
+         const delRes = await fetch(`${API_URL}/files/${avatarFileId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+         });
+         const delData = await delRes.json().catch(() => ({}));
+         if (!delRes.ok) {
+            return { error: delData.error?.message || "ลบรูปโปรไฟล์ไม่สำเร็จ" };
+         }
+      }
+
       if (avatarFile instanceof File && avatarFile.size > 0) {
          const uploadResult = await uploadProfileImage(token, avatarFile);
          if (!uploadResult.ok) {

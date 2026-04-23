@@ -380,6 +380,35 @@
    border-color: rgba(255, 255, 255, 0.2);
 }
 
+.ws-btn-ghost-danger {
+   display: inline-flex;
+   align-items: center;
+   gap: 6px;
+   padding: 8px 14px;
+   background: rgba(239, 68, 68, 0.08);
+   color: #f87171;
+   border: 1px solid rgba(248, 113, 113, 0.28);
+   border-radius: 8px;
+   font-size: 14px;
+   font-weight: 600;
+   cursor: pointer;
+   transition:
+      background 0.15s,
+      border-color 0.15s,
+      opacity 0.15s;
+   white-space: nowrap;
+}
+
+.ws-btn-ghost-danger:hover {
+   background: rgba(239, 68, 68, 0.16);
+   border-color: rgba(248, 113, 113, 0.42);
+}
+
+.ws-btn-ghost-danger:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+}
+
 /* ─── Project Table ────────────────────────────────────────────────────────── */
 
 .ws-table-wrap {
@@ -682,6 +711,201 @@
 .ws-form-textarea {
    resize: vertical;
    min-height: 80px;
+}
+
+.ws-file-dropzone {
+   border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border));
+   border-radius: 12px;
+   padding: 18px;
+   background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 10%, transparent), transparent 45%),
+      var(--bg3);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 8px;
+   transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      transform 0.15s ease;
+}
+
+.ws-file-dropzone.is-dragging {
+   border-color: var(--accent);
+   background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 18%, transparent), transparent 50%),
+      var(--bg2);
+   transform: translateY(-1px);
+}
+
+.ws-file-dropzone-input {
+   display: none;
+}
+
+.ws-file-dropzone-title {
+   color: var(--text);
+   font-size: 14px;
+   font-weight: 700;
+}
+
+.ws-file-dropzone-hint {
+   color: var(--text-dim);
+   font-size: 12px;
+   text-align: center;
+}
+
+.ws-file-dropzone-warning {
+   color: #fda4af;
+   font-size: 12px;
+   text-align: center;
+}
+
+.ws-file-dropzone-error {
+   color: #f87171;
+   font-size: 12px;
+   text-align: center;
+}
+
+.ws-file-dropzone-btn {
+   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+   background: color-mix(in srgb, var(--accent) 18%, var(--bg2));
+   color: var(--text);
+   border-radius: 8px;
+   padding: 8px 14px;
+   font-size: 13px;
+   font-weight: 600;
+   cursor: pointer;
+}
+
+.ws-file-dropzone-btn:hover {
+   background: color-mix(in srgb, var(--accent) 26%, var(--bg2));
+}
+
+.ws-file-selected-row {
+   margin-top: 8px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 12px;
+}
+
+.ws-file-selected-name {
+   font-size: 12px;
+   color: var(--text-dim);
+   word-break: break-all;
+}
+
+.ws-file-selected-clear {
+   border: 1px solid var(--border);
+   background: var(--bg3);
+   color: var(--text-dim);
+   border-radius: 6px;
+   padding: 4px 10px;
+   font-size: 12px;
+   cursor: pointer;
+}
+
+.ws-file-selected-clear:hover {
+   color: var(--text);
+}
+
+.ws-file-current-preview {
+   margin-top: 8px;
+}
+
+.ws-file-current-preview-img {
+   width: 72px;
+   height: 72px;
+   border-radius: 999px;
+   object-fit: cover;
+   border: 1px solid var(--border);
+}
+
+.ws-avatar-preview-wrap {
+   margin-top: 10px;
+   width: fit-content;
+   position: relative;
+}
+
+.ws-avatar-preview-wrap--inside-dropzone {
+   margin-top: 0;
+   margin-bottom: 4px;
+}
+
+.ws-avatar-preview-img {
+   width: 72px;
+   height: 72px;
+   border-radius: 999px;
+   object-fit: cover;
+   border: 1px solid var(--border);
+}
+
+.ws-avatar-delete-icon-btn {
+   position: absolute;
+   top: -6px;
+   right: -6px;
+   width: 24px;
+   height: 24px;
+   border-radius: 999px;
+   border: 1px solid rgba(248, 113, 113, 0.45);
+   background: #3a1114;
+   color: #fda4af;
+   font-size: 12px;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   line-height: 1;
+   padding: 0;
+}
+
+.ws-avatar-delete-icon-btn:hover {
+   background: #4c1418;
+   color: #fecdd3;
+}
+
+.ws-avatar-delete-icon-btn:disabled {
+   opacity: 0.55;
+   cursor: not-allowed;
+}
+
+.ws-dropzone-modal-backdrop {
+   position: fixed;
+   inset: 0;
+   z-index: 120;
+   background: rgba(0, 0, 0, 0.55);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   padding: 16px;
+}
+
+.ws-dropzone-modal {
+   width: min(420px, 100%);
+   background: var(--bg2);
+   border: 1px solid var(--border);
+   border-radius: 12px;
+   padding: 18px;
+}
+
+.ws-dropzone-modal-title {
+   margin: 0 0 6px;
+   font-size: 16px;
+   color: var(--text);
+}
+
+.ws-dropzone-modal-text {
+   margin: 0;
+   color: var(--text-dim);
+   font-size: 13px;
+   line-height: 1.45;
+}
+
+.ws-dropzone-modal-actions {
+   margin-top: 14px;
+   display: flex;
+   justify-content: flex-end;
+   gap: 8px;
 }
 
 .ws-form-error {

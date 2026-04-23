@@ -14,13 +14,17 @@ export const metadata = { title: "โปรไฟล์ & Portfolio — Vexentra
 const API_URL = process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
 
 async function fetchMyProfile(token: string): Promise<{ data: FullProfileData | null; status: number }> {
-   const res = await fetch(`${API_URL}/me/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-   });
-   if (!res.ok) return { data: null, status: res.status };
-   const body = await res.json();
-   return { data: body.data, status: res.status };
+   try {
+      const res = await fetch(`${API_URL}/me/profile`, {
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+      if (!res.ok) return { data: null, status: res.status };
+      const body = await res.json().catch(() => null);
+      return { data: body?.data ?? null, status: res.status };
+   } catch {
+      return { data: null, status: 503 };
+   }
 }
 
 export default async function ProfilePage() {
@@ -30,12 +34,12 @@ export default async function ProfilePage() {
    const myPortfolioPath = `/portfolio/${me.person_id}`;
 
    const { data, status } = await fetchMyProfile(token);
-   if (!data) handleAuthError(status, "/workspace/profile");
+   if (!data && status === 401) handleAuthError(status, "/workspace/profile");
 
-   const profile = data.profile ?? null;
-   const skills = data.skills ?? [];
-   const experiences = data.experiences ?? [];
-   const portfolio = data.portfolio ?? [];
+   const profile = data?.profile ?? null;
+   const skills = data?.skills ?? [];
+   const experiences = data?.experiences ?? [];
+   const portfolio = data?.portfolio ?? [];
 
    return (
       <div className="ws-page">
