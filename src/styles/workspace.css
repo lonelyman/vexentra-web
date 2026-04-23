@@ -182,6 +182,14 @@
    font-weight: 700;
    color: var(--accent);
    flex-shrink: 0;
+   overflow: hidden;
+}
+
+.ws-user-avatar-img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+   display: block;
 }
 
 .ws-user-info {

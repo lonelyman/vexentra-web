@@ -5,6 +5,22 @@ import "@/styles/workspace.css";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+const API_URL = process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
+
+async function fetchMyAvatarURL(token: string): Promise<string | null> {
+   try {
+      const res = await fetch(`${API_URL}/me/profile`, {
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+      if (!res.ok) return null;
+      const body = await res.json().catch(() => null);
+      return body?.data?.profile?.avatar_url || null;
+   } catch {
+      return null;
+   }
+}
+
 export default async function WorkspaceLayout({
    children,
 }: {
@@ -18,10 +34,11 @@ export default async function WorkspaceLayout({
 
    const { data: me, status } = await fetchMe(token);
    if (!me) handleAuthError(status, "/workspace/projects");
+   const avatarUrl = await fetchMyAvatarURL(token);
 
    return (
       <div className="ws-layout">
-         <WorkspaceSidebar username={me.username} email={me.email} role={me.role} />
+         <WorkspaceSidebar username={me.username} email={me.email} role={me.role} avatarUrl={avatarUrl} />
          <div className="ws-content">{children}</div>
       </div>
    );

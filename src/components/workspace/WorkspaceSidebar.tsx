@@ -9,9 +9,10 @@ interface Props {
    username: string;
    email: string;
    role: string;
+   avatarUrl?: string | null;
 }
 
-export default function WorkspaceSidebar({ username, email, role }: Props) {
+export default function WorkspaceSidebar({ username, email, role, avatarUrl }: Props) {
    const pathname = usePathname();
    const initial = username.slice(0, 1).toUpperCase();
    const isAdmin = role === "admin";
@@ -171,7 +172,13 @@ export default function WorkspaceSidebar({ username, email, role }: Props) {
          {/* User badge */}
          <div className="ws-sidebar-footer">
             <div className="ws-user-badge">
-               <div className="ws-user-avatar">{initial}</div>
+               <div className="ws-user-avatar">
+                  {avatarUrl ? (
+                     <img src={avatarUrl} alt={username} className="ws-user-avatar-img" />
+                  ) : (
+                     initial
+                  )}
+               </div>
                <div className="ws-user-info">
                   <div className="ws-user-name">{username}</div>
                   <div className="ws-user-status">{email}</div>
