@@ -9,9 +9,11 @@ const init: ActionState = {};
 
 export default function EditProfileForm({
    userId,
+   personId,
    profile,
 }: {
    userId: string;
+   personId: string;
    profile: Profile | null;
 }) {
    const [state, action, pending] = useActionState(adminUpdateProfileAction, init);
@@ -19,6 +21,7 @@ export default function EditProfileForm({
    return (
       <form action={action}>
          <input type="hidden" name="user_id" value={userId} />
+         <input type="hidden" name="person_id" value={personId} />
 
          {state.error && <div className="ws-form-error">{state.error}</div>}
          {state.success && (
@@ -71,13 +74,22 @@ export default function EditProfileForm({
          </div>
 
          <div className="ws-form-group">
-            <label className="ws-form-label">URL รูปโปรไฟล์</label>
+            <label className="ws-form-label">รูปโปรไฟล์ (JPEG/PNG/WEBP, สูงสุด 5MB) <span style={{ color: "var(--muted)" }}>(optional)</span></label>
             <input
-               name="avatar_url"
+               name="avatar_file"
                className="ws-form-input"
-               defaultValue={profile?.avatar_url ?? ""}
-               placeholder="https://..."
+               type="file"
+               accept="image/jpeg,image/png,image/webp"
             />
+            {profile?.avatar_url && (
+               <div style={{ marginTop: 8 }}>
+                  <img
+                     src={profile.avatar_url}
+                     alt={profile.display_name || "avatar"}
+                     style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover" }}
+                  />
+               </div>
+            )}
          </div>
 
          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>

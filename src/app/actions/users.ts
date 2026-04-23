@@ -28,6 +28,65 @@ function normalizeOptionalURL(raw: string): string {
    }
 }
 
+async function uploadProfileImageAsAdmin(
+   token: string,
+   personId: string,
+   file: File,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+   const mimeType = (file.type || "").trim().toLowerCase();
+   const filename = file.name || "upload";
+   const sizeBytes = file.size || 0;
+
+   const presignRes = await fetch(`${API_URL}/uploads/presign`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+         intent: "profile_image",
+         filename,
+         mime_type: mimeType,
+         size_bytes: sizeBytes,
+         target_person_id: personId,
+      }),
+      cache: "no-store",
+   });
+   const presignData = await presignRes.json().catch(() => ({}));
+   if (!presignRes.ok || !presignData?.data?.upload_url || !presignData?.data?.upload_session_id) {
+      return { ok: false, error: presignData?.error?.message || "ไม่สามารถสร้าง URL อัปโหลดได้" };
+   }
+
+   const uploadHeaders: Record<string, string> = presignData.data.upload_headers || {};
+   const uploadBody = Buffer.from(await file.arrayBuffer());
+   const uploadRes = await fetch(presignData.data.upload_url as string, {
+      method: "PUT",
+      headers: uploadHeaders,
+      body: uploadBody,
+      cache: "no-store",
+   });
+   if (!uploadRes.ok) {
+      return { ok: false, error: "อัปโหลดรูปไม่สำเร็จ" };
+   }
+
+   const completeRes = await fetch(`${API_URL}/uploads/complete`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+         upload_session_id: presignData.data.upload_session_id,
+      }),
+      cache: "no-store",
+   });
+   const completeData = await completeRes.json().catch(() => ({}));
+   if (!completeRes.ok) {
+      return { ok: false, error: completeData?.error?.message || "ไม่สามารถผูกรูปกับโปรไฟล์ได้" };
+   }
+   return { ok: true };
+}
+
 export async function adminUpdateUserAction(
    _prev: ActionState,
    formData: FormData,
@@ -151,6 +210,8 @@ export async function adminUpdateProfileAction(
    if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
 
    const userId = formData.get("user_id") as string;
+   const personId = formData.get("person_id") as string;
+   if (!personId) return { error: "ไม่พบ person id ของผู้ใช้งาน" };
    const displayName = ((formData.get("display_name") as string) || "").trim();
    if (!displayName) return { error: "กรุณากรอกชื่อแสดงผล" };
    const headline = ((formData.get("headline") as string) || "").trim();
@@ -161,7 +222,6 @@ export async function adminUpdateProfileAction(
       headline,
       bio: formData.get("bio") as string,
       location: formData.get("location") as string,
-      avatar_url: normalizeOptionalURL((formData.get("avatar_url") as string) || ""),
    };
 
    try {
@@ -174,6 +234,16 @@ export async function adminUpdateProfileAction(
 
       const data = await res.json();
       if (!res.ok) return { error: data.error?.message || "ไม่สามารถอัปเดตโปรไฟล์ได้" };
+
+      const avatarFile = formData.get("avatar_file");
+      if (avatarFile instanceof File && avatarFile.size > 0) {
+         const uploadResult = await uploadProfileImageAsAdmin(token, personId, avatarFile);
+         if (!uploadResult.ok) {
+            revalidatePath(`/workspace/persons/${userId}/edit`);
+            revalidatePath("/workspace/persons");
+            return { error: `บันทึกโปรไฟล์แล้ว แต่รูปโปรไฟล์ไม่สำเร็จ: ${uploadResult.error}` };
+         }
+      }
 
       revalidatePath(`/workspace/persons/${userId}/edit`);
       revalidatePath("/workspace/persons");

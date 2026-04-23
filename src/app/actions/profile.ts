@@ -32,6 +32,65 @@ async function getToken(): Promise<string | null> {
    return (await cookies()).get("token")?.value ?? null;
 }
 
+async function uploadProfileImage(
+   token: string,
+   file: File,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+   const mimeType = (file.type || "").trim().toLowerCase();
+   const filename = file.name || "upload";
+   const sizeBytes = file.size || 0;
+
+   const presignRes = await fetch(`${API_URL}/uploads/presign`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+         intent: "profile_image",
+         filename,
+         mime_type: mimeType,
+         size_bytes: sizeBytes,
+      }),
+      cache: "no-store",
+   });
+
+   const presignData = await presignRes.json().catch(() => ({}));
+   if (!presignRes.ok || !presignData?.data?.upload_url || !presignData?.data?.upload_session_id) {
+      return { ok: false, error: presignData?.error?.message || "ไม่สามารถสร้าง URL อัปโหลดได้" };
+   }
+
+   const uploadHeaders: Record<string, string> = presignData.data.upload_headers || {};
+   const uploadBody = Buffer.from(await file.arrayBuffer());
+   const uploadRes = await fetch(presignData.data.upload_url as string, {
+      method: "PUT",
+      headers: uploadHeaders,
+      body: uploadBody,
+      cache: "no-store",
+   });
+   if (!uploadRes.ok) {
+      return { ok: false, error: "อัปโหลดรูปไม่สำเร็จ" };
+   }
+
+   const completeRes = await fetch(`${API_URL}/uploads/complete`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+         upload_session_id: presignData.data.upload_session_id,
+      }),
+      cache: "no-store",
+   });
+   const completeData = await completeRes.json().catch(() => ({}));
+   if (!completeRes.ok) {
+      return { ok: false, error: completeData?.error?.message || "ไม่สามารถผูกรูปกับโปรไฟล์ได้" };
+   }
+
+   return { ok: true };
+}
+
 function revalidateMyProfilePages() {
    revalidatePath("/");
    revalidatePath("/portfolio");
@@ -59,7 +118,6 @@ export async function updateProfileAction(
       headline,
       bio: (formData.get("bio") as string) || "",
       location: (formData.get("location") as string) || "",
-      avatar_url: normalizeOptionalURL((formData.get("avatar_url") as string) || ""),
    };
 
    try {
@@ -76,6 +134,15 @@ export async function updateProfileAction(
       if (!res.ok) {
          const data = await res.json().catch(() => ({}));
          return { error: data.error?.message || "บันทึกข้อมูลไม่สำเร็จ" };
+      }
+
+      const avatarFile = formData.get("avatar_file");
+      if (avatarFile instanceof File && avatarFile.size > 0) {
+         const uploadResult = await uploadProfileImage(token, avatarFile);
+         if (!uploadResult.ok) {
+            revalidateMyProfilePages();
+            return { error: `บันทึกโปรไฟล์แล้ว แต่รูปโปรไฟล์ไม่สำเร็จ: ${uploadResult.error}` };
+         }
       }
 
       revalidateMyProfilePages();

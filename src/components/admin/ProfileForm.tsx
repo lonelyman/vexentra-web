@@ -4,15 +4,15 @@ import { useActionState, useEffect, useState } from "react";
 import { updateProfileAction } from "@/app/actions/profile";
 import { Profile } from "@/lib/api/types";
 
+type ActionState = { error?: string; success?: boolean; message?: string };
+const init: ActionState = {};
+
 export default function ProfileForm({
    initialData,
 }: {
    initialData: Profile | null | undefined;
 }) {
-   const [state, formAction, pending] = useActionState(
-      updateProfileAction,
-      null,
-   );
+   const [state, formAction, pending] = useActionState(updateProfileAction, init);
    const [showSuccess, setShowSuccess] = useState(false);
 
    useEffect(() => {

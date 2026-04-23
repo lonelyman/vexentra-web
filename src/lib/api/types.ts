@@ -22,6 +22,7 @@ export interface Profile {
    headline: string;
    bio: string;
    location: string;
+   avatar_file_id?: string | null;
    avatar_url: string;
    social_links: SocialLink[];
 }
