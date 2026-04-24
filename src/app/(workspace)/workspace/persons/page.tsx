@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { UserListItem } from "@/lib/api/types";
 import Link from "next/link";
 import CreateUserModal from "@/components/workspace/CreateUserModal";
+import Pagination from "@/components/workspace/Pagination";
 
 export const metadata = { title: "พนักงานทั้งหมด — Vexentra" };
 
@@ -24,10 +25,13 @@ const STATUS_LABEL: Record<string, string> = {
    pending: "รอยืนยัน",
 };
 
+const validLimits = [10, 20, 50, 100, 200, 500];
+const DEFAULT_LIMIT = 20;
+
 export default async function PersonsPage({
    searchParams,
 }: {
-   searchParams: Promise<{ page?: string }>;
+   searchParams: Promise<{ page?: string; limit?: string }>;
 }) {
    const token = await requireAuth("/workspace/persons");
 
@@ -37,12 +41,21 @@ export default async function PersonsPage({
 
    const sp = await searchParams;
    const page = Math.max(1, Number(sp.page) || 1);
-   const limit = 20;
+   const limit = validLimits.includes(Number(sp.limit)) ? Number(sp.limit) : DEFAULT_LIMIT;
 
    const { data, status } = await fetchUsers(token, { page, limit });
    if (!data) handleAuthError(status, "/workspace/persons");
 
    const { items, pagination } = data!;
+   const totalPages = pagination.total_pages || 1;
+
+   if (page > totalPages) {
+      const p = new URLSearchParams();
+      if (limit !== DEFAULT_LIMIT) p.set("limit", String(limit));
+      if (totalPages > 1) p.set("page", String(totalPages));
+      const qs = p.toString();
+      redirect(`/workspace/persons${qs ? `?${qs}` : ""}`);
+   }
 
    return (
       <div className="ws-page">
@@ -67,24 +80,25 @@ export default async function PersonsPage({
                </div>
             ) : (
                <>
+                  <div className="ws-table-scroll">
                   <table className="ws-table">
                      <thead>
                         <tr>
-                           <th>ลำดับ</th>
+                           <th style={{ width: 48, textAlign: "center" }}>ลำดับ</th>
                            <th>Username</th>
                            <th>Email</th>
                            <th>Role</th>
                            <th>สถานะ</th>
-                           <th>ยืนยันอีเมล</th>
-                           <th>เข้าใช้ล่าสุด</th>
-                           <th>สมัครเมื่อ</th>
-                           <th></th>
+                           <th style={{ minWidth: 120 }}>ยืนยันอีเมล</th>
+                           <th style={{ minWidth: 140 }}>เข้าใช้ล่าสุด</th>
+                           <th style={{ minWidth: 140 }}>สมัครเมื่อ</th>
+                           <th style={{ width: 90, textAlign: "center" }}>เครื่องมือ</th>
                         </tr>
                      </thead>
                      <tbody>
                         {items.map((u: UserListItem, index: number) => (
                            <tr key={u.id}>
-                              <td style={{ color: "var(--text-dim)", fontSize: 13 }}>
+                              <td style={{ textAlign: "center", color: "var(--text-dim)", fontSize: 13 }}>
                                  {(page - 1) * limit + index + 1}
                               </td>
                               <td>
@@ -144,42 +158,16 @@ export default async function PersonsPage({
                         ))}
                      </tbody>
                   </table>
-
-                  <div className="ws-pagination">
-                     <span>
-                        {pagination.total_records} คน · หน้า {page} / {pagination.total_pages}
-                     </span>
-                     <div className="ws-pagination-links">
-                        <Link
-                           href={`/workspace/persons?page=${page - 1}`}
-                           className="ws-pagination-link"
-                           aria-disabled={page <= 1 ? "true" : undefined}
-                        >
-                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
-                              <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
-                           </svg>
-                        </Link>
-                        {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map((p) => (
-                           <Link
-                              key={p}
-                              href={`/workspace/persons?page=${p}`}
-                              className="ws-pagination-link"
-                              style={p === page ? { background: "var(--accent)", color: "#fff", borderColor: "var(--accent)" } : undefined}
-                           >
-                              {p}
-                           </Link>
-                        ))}
-                        <Link
-                           href={`/workspace/persons?page=${page + 1}`}
-                           className="ws-pagination-link"
-                           aria-disabled={page >= pagination.total_pages ? "true" : undefined}
-                        >
-                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
-                              <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-                           </svg>
-                        </Link>
-                     </div>
                   </div>
+
+                  <Pagination
+                     page={page}
+                     limit={limit}
+                     totalPages={totalPages}
+                     totalRecords={pagination.total_records}
+                     unit="คน"
+                     basePath="/workspace/persons"
+                  />
                </>
             )}
          </div>

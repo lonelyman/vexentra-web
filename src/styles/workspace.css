@@ -426,6 +426,10 @@
    overflow: hidden;
 }
 
+.ws-table-scroll {
+   overflow-x: auto;
+}
+
 .ws-table {
    width: 100%;
    border-collapse: collapse;
@@ -434,7 +438,7 @@
 
 .ws-table th {
    text-align: left;
-   padding: 12px 16px;
+   padding: 10px 14px;
    font-size: 12px;
    font-weight: 600;
    letter-spacing: 0.05em;
@@ -445,7 +449,7 @@
 }
 
 .ws-table td {
-   padding: 14px 16px;
+   padding: 10px 14px;
    border-bottom: 1px solid var(--border);
    vertical-align: middle;
 }
