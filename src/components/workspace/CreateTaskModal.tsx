@@ -7,7 +7,13 @@ import { createTaskAction } from "@/app/actions/tasks";
 type ActionState = { error?: string; success?: boolean };
 const init: ActionState = {};
 
-export default function CreateTaskModal({ projectId }: { projectId: string }) {
+export default function CreateTaskModal({
+   projectId,
+   disabled = false,
+}: {
+   projectId: string;
+   disabled?: boolean;
+}) {
    const router = useRouter();
    const backdropRef = useRef<HTMLDivElement>(null);
    const [state, action, pending] = useActionState(createTaskAction, init);
@@ -24,7 +30,7 @@ export default function CreateTaskModal({ projectId }: { projectId: string }) {
 
    return (
       <>
-         <button className="ws-btn-primary" onClick={open}>
+         <button className="ws-btn-primary" onClick={open} disabled={disabled}>
             + สร้างงาน
          </button>
 
@@ -38,7 +44,7 @@ export default function CreateTaskModal({ projectId }: { projectId: string }) {
                   <input type="hidden" name="project_id" value={projectId} />
 
                   <div className="ws-form-group">
-                     <label className="ws-form-label">ชื่องาน *</label>
+                     <label className="ws-form-label">ชื่องาน</label>
                      <input
                         type="text"
                         name="title"

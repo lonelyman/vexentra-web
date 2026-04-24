@@ -18,7 +18,7 @@ export default function CreateProjectButton() {
          closeDialog();
          router.refresh();
       }
-   }, [state.success]);
+   }, [state.success, router]);
 
    function openDialog() {
       dialogRef.current?.classList.add("open");
@@ -70,7 +70,7 @@ export default function CreateProjectButton() {
 
                   <div className="ws-form-group">
                      <label className="ws-form-label" htmlFor="proj-name">
-                        ชื่อโปรเจกต์ <span style={{ color: "#f87171" }}>*</span>
+                        ชื่อโปรเจกต์
                      </label>
                      <input
                         ref={nameRef}
@@ -85,8 +85,23 @@ export default function CreateProjectButton() {
                   </div>
 
                   <div className="ws-form-group">
+                     <label className="ws-form-label" htmlFor="proj-kind">
+                        ประเภทโครงการ
+                     </label>
+                     <select
+                        id="proj-kind"
+                        name="project_kind"
+                        className="ws-form-select"
+                        defaultValue="client_delivery"
+                     >
+                        <option value="client_delivery">งานลูกค้า (Client Delivery)</option>
+                        <option value="internal_continuous">งานภายในต่อเนื่อง (Internal)</option>
+                     </select>
+                  </div>
+
+                  <div className="ws-form-group">
                      <label className="ws-form-label" htmlFor="proj-desc">
-                        รายละเอียด (ไม่บังคับ)
+                        รายละเอียด
                      </label>
                      <textarea
                         id="proj-desc"

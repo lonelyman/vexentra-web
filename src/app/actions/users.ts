@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 const API_URL = process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
 
-type ActionState = { error?: string; success?: boolean };
+type ActionState = { error?: string; success?: boolean; message?: string };
 
 function parseSortOrder(v: FormDataEntryValue | null): number {
    const n = Number(v ?? 0);
@@ -14,6 +14,96 @@ function parseSortOrder(v: FormDataEntryValue | null): number {
 
 function toRFC3339DateStart(date: string): string {
    return `${date}T00:00:00Z`;
+}
+
+function normalizeOptionalURL(raw: string): string {
+   const v = raw.trim();
+   if (!v) return "";
+   try {
+      const u = new URL(v);
+      if (u.protocol === "http:" || u.protocol === "https:") return v;
+      return "";
+   } catch {
+      return "";
+   }
+}
+
+function inferMimeByFilename(filename: string): string {
+   const lower = filename.trim().toLowerCase();
+   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+   if (lower.endsWith(".png")) return "image/png";
+   if (lower.endsWith(".webp")) return "image/webp";
+   return "";
+}
+
+function normalizeImageMime(rawMime: string, filename: string): string {
+   const mime = (rawMime || "").trim().toLowerCase();
+   if (mime === "image/jpg") return "image/jpeg";
+   if (mime === "image/jpeg" || mime === "image/png" || mime === "image/webp") return mime;
+   return inferMimeByFilename(filename);
+}
+
+async function uploadProfileImageAsAdmin(
+   token: string,
+   personId: string,
+   file: File,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+   const filename = file.name || "upload";
+   const mimeType = normalizeImageMime(file.type, filename);
+   const sizeBytes = file.size || 0;
+
+   if (!mimeType) {
+      return { ok: false, error: "รองรับเฉพาะไฟล์ JPEG, PNG, WEBP" };
+   }
+
+   const presignRes = await fetch(`${API_URL}/uploads/presign`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+         intent: "profile_image",
+         filename,
+         mime_type: mimeType,
+         size_bytes: sizeBytes,
+         target_person_id: personId,
+      }),
+      cache: "no-store",
+   });
+   const presignData = await presignRes.json().catch(() => ({}));
+   if (!presignRes.ok || !presignData?.data?.upload_url || !presignData?.data?.upload_session_id) {
+      return { ok: false, error: presignData?.error?.message || "ไม่สามารถสร้าง URL อัปโหลดได้" };
+   }
+
+   const uploadHeaders: Record<string, string> = presignData.data.upload_headers || {};
+   const uploadBody = Buffer.from(await file.arrayBuffer());
+   const uploadRes = await fetch(presignData.data.upload_url as string, {
+      method: "PUT",
+      headers: uploadHeaders,
+      body: uploadBody,
+      cache: "no-store",
+   });
+   if (!uploadRes.ok) {
+      return { ok: false, error: "อัปโหลดรูปไม่สำเร็จ" };
+   }
+
+   const completeRes = await fetch(`${API_URL}/uploads/complete`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+         upload_session_id: presignData.data.upload_session_id,
+      }),
+      cache: "no-store",
+   });
+   const completeData = await completeRes.json().catch(() => ({}));
+   if (!completeRes.ok) {
+      return { ok: false, error: completeData?.error?.message || "ไม่สามารถผูกรูปกับโปรไฟล์ได้" };
+   }
+   return { ok: true };
 }
 
 export async function adminUpdateUserAction(
@@ -104,7 +194,7 @@ export async function adminSetUserPasswordAction(
    }
 }
 
-export async function adminUpdateProfileAction(
+export async function adminResendVerifyEmailAction(
    _prev: ActionState,
    formData: FormData,
 ): Promise<ActionState> {
@@ -113,12 +203,67 @@ export async function adminUpdateProfileAction(
 
    const userId = formData.get("user_id") as string;
 
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/resend-verify`, {
+         method: "POST",
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: data.error?.message || "ไม่สามารถส่งอีเมลยืนยันได้" };
+
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      revalidatePath("/workspace/persons");
+      return { success: true, message: data?.data?.message || "ส่งอีเมลยืนยันอีกครั้งเรียบร้อย" };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminUpdateProfileAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const avatarDeletePending = ((formData.get("avatar_delete_pending") as string) || "0").trim() === "1";
+   const avatarFileId = ((formData.get("avatar_file_id") as string) || "").trim();
+   const actionType = ((formData.get("action_type") as string) || "save").trim();
+   if (actionType === "delete_avatar") {
+      if (!avatarFileId) return { error: "ไม่พบรูปโปรไฟล์ที่ต้องการลบ" };
+
+      try {
+         const delRes = await fetch(`${API_URL}/files/${avatarFileId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+         });
+         const delData = await delRes.json().catch(() => ({}));
+         if (!delRes.ok) return { error: delData.error?.message || "ลบรูปโปรไฟล์ไม่สำเร็จ" };
+
+         revalidatePath(`/workspace/persons/${userId}/edit`);
+         revalidatePath("/workspace/persons");
+         return { success: true, message: "ลบรูปโปรไฟล์เรียบร้อยแล้ว" };
+      } catch {
+         return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+      }
+   }
+
+   const personId = formData.get("person_id") as string;
+   if (!personId) return { error: "ไม่พบ person id ของผู้ใช้งาน" };
+   const displayName = ((formData.get("display_name") as string) || "").trim();
+   if (!displayName) return { error: "กรุณากรอกชื่อแสดงผล" };
+   const headline = ((formData.get("headline") as string) || "").trim();
+   if (!headline) return { error: "กรุณากรอก Headline" };
+
    const body = {
-      display_name: formData.get("display_name") as string,
-      headline: formData.get("headline") as string,
+      display_name: displayName,
+      headline,
       bio: formData.get("bio") as string,
       location: formData.get("location") as string,
-      avatar_url: formData.get("avatar_url") as string,
    };
 
    try {
@@ -131,6 +276,28 @@ export async function adminUpdateProfileAction(
 
       const data = await res.json();
       if (!res.ok) return { error: data.error?.message || "ไม่สามารถอัปเดตโปรไฟล์ได้" };
+
+      const avatarFile = formData.get("avatar_file");
+      if (avatarDeletePending && avatarFileId && !(avatarFile instanceof File && avatarFile.size > 0)) {
+         const delRes = await fetch(`${API_URL}/files/${avatarFileId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+         });
+         const delData = await delRes.json().catch(() => ({}));
+         if (!delRes.ok) {
+            return { error: delData.error?.message || "ลบรูปโปรไฟล์ไม่สำเร็จ" };
+         }
+      }
+
+      if (avatarFile instanceof File && avatarFile.size > 0) {
+         const uploadResult = await uploadProfileImageAsAdmin(token, personId, avatarFile);
+         if (!uploadResult.ok) {
+            revalidatePath(`/workspace/persons/${userId}/edit`);
+            revalidatePath("/workspace/persons");
+            return { error: `บันทึกโปรไฟล์แล้ว แต่รูปโปรไฟล์ไม่สำเร็จ: ${uploadResult.error}` };
+         }
+      }
 
       revalidatePath(`/workspace/persons/${userId}/edit`);
       revalidatePath("/workspace/persons");
@@ -164,6 +331,65 @@ export async function adminAddSkillAction(
       });
       const data = await res.json();
       if (!res.ok) return { error: data.error?.message || "ไม่สามารถเพิ่มทักษะได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminUpdateSkillAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const skillId = formData.get("skill_id") as string;
+   const body = {
+      name: (formData.get("name") as string) || "",
+      category: (formData.get("category") as string) || "other",
+      proficiency: Number(formData.get("proficiency") || 3),
+      sort_order: parseSortOrder(formData.get("sort_order")),
+   };
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/skills/${skillId}`, {
+         method: "PUT",
+         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+         body: JSON.stringify(body),
+         cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: data.error?.message || "ไม่สามารถแก้ไขทักษะได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminDeleteSkillAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const skillId = formData.get("skill_id") as string;
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/skills/${skillId}`, {
+         method: "DELETE",
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+      if (!res.ok) {
+         const data = await res.json().catch(() => ({}));
+         return { error: data.error?.message || "ไม่สามารถลบทักษะได้" };
+      }
       revalidatePath(`/workspace/persons/${userId}/edit`);
       return { success: true };
    } catch {
@@ -295,9 +521,9 @@ export async function adminAddPortfolioAction(
       title: (formData.get("title") as string) || "",
       summary: (formData.get("summary") as string) || "",
       description: (formData.get("description") as string) || "",
-      cover_image_url: (formData.get("cover_image_url") as string) || "",
-      demo_url: (formData.get("demo_url") as string) || "",
-      source_url: (formData.get("source_url") as string) || "",
+      cover_image_url: normalizeOptionalURL((formData.get("cover_image_url") as string) || ""),
+      demo_url: normalizeOptionalURL((formData.get("demo_url") as string) || ""),
+      source_url: normalizeOptionalURL((formData.get("source_url") as string) || ""),
       status: (formData.get("status") as string) || "draft",
       featured: formData.get("featured") === "on",
       sort_order: parseSortOrder(formData.get("sort_order")),
@@ -320,6 +546,84 @@ export async function adminAddPortfolioAction(
       });
       const data = await res.json();
       if (!res.ok) return { error: data.error?.message || "ไม่สามารถเพิ่มผลงานได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminUpdatePortfolioAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const itemId = formData.get("item_id") as string;
+   const startedAt = (formData.get("started_at") as string) || "";
+   const endedAt = (formData.get("ended_at") as string) || "";
+   const tagsRaw = ((formData.get("tags") as string) || "").trim();
+
+   const body = {
+      title: (formData.get("title") as string) || "",
+      summary: (formData.get("summary") as string) || "",
+      description: (formData.get("description") as string) || "",
+      cover_image_url: normalizeOptionalURL((formData.get("cover_image_url") as string) || ""),
+      demo_url: normalizeOptionalURL((formData.get("demo_url") as string) || ""),
+      source_url: normalizeOptionalURL((formData.get("source_url") as string) || ""),
+      status: (formData.get("status") as string) || "draft",
+      featured: formData.get("featured") === "on",
+      sort_order: parseSortOrder(formData.get("sort_order")),
+      started_at: startedAt ? toRFC3339DateStart(startedAt) : null,
+      ended_at: endedAt ? toRFC3339DateStart(endedAt) : null,
+      tags: tagsRaw
+         ? tagsRaw
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+         : [],
+   };
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/portfolio/${itemId}`, {
+         method: "PUT",
+         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+         body: JSON.stringify(body),
+         cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: data.error?.message || "ไม่สามารถแก้ไขผลงานได้" };
+      revalidatePath(`/workspace/persons/${userId}/edit`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้" };
+   }
+}
+
+export async function adminDeletePortfolioAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const userId = formData.get("user_id") as string;
+   const itemId = formData.get("item_id") as string;
+
+   try {
+      const res = await fetch(`${API_URL}/users/${userId}/portfolio/${itemId}`, {
+         method: "DELETE",
+         headers: { Authorization: `Bearer ${token}` },
+         cache: "no-store",
+      });
+
+      if (!res.ok) {
+         const data = await res.json().catch(() => ({}));
+         return { error: data.error?.message || "ไม่สามารถลบผลงานได้" };
+      }
+
       revalidatePath(`/workspace/persons/${userId}/edit`);
       return { success: true };
    } catch {

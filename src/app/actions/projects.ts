@@ -4,6 +4,12 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 const API_URL = process.env.INTERNAL_API_URL || "http://api:3000/api/v1";
+const PROJECT_KINDS = ["client_delivery", "internal_continuous"] as const;
+const FINANCE_VISIBILITIES = [
+   "all_members",
+   "lead_coordinator_staff",
+   "staff_only",
+] as const;
 
 type ActionState = { error?: string; success?: boolean };
 
@@ -45,8 +51,13 @@ export async function createProjectAction(
 
    const name = (formData.get("name") as string)?.trim();
    const description = (formData.get("description") as string)?.trim();
+   const rawProjectKind = (formData.get("project_kind") as string)?.trim();
+   const projectKind = rawProjectKind || "client_delivery";
 
    if (!name) return { error: "กรุณาระบุชื่อโปรเจกต์" };
+   if (!PROJECT_KINDS.includes(projectKind as (typeof PROJECT_KINDS)[number])) {
+      return { error: "ประเภทโครงการไม่ถูกต้อง" };
+   }
 
    try {
       const res = await fetch(`${API_URL}/projects`, {
@@ -57,6 +68,7 @@ export async function createProjectAction(
          },
          body: JSON.stringify({
             name,
+            project_kind: projectKind,
             description: description || undefined,
          }),
          cache: "no-store",
@@ -85,6 +97,8 @@ export async function updateProjectStatusAction(
    const projectCode = (formData.get("project_code") as string)?.trim();
    const name = (formData.get("name") as string)?.trim();
    const rawStatus = (formData.get("status") as string)?.trim();
+   const rawProjectKind = (formData.get("project_kind") as string)?.trim();
+   const projectKind = rawProjectKind || "client_delivery";
    const normalizedStatus = rawStatus?.toLowerCase().replace(/[\s-]+/g, "_");
    const statusMaster = await fetchProjectStatusMaster(token);
    if (statusMaster.error) return { error: statusMaster.error };
@@ -94,6 +108,9 @@ export async function updateProjectStatusAction(
    if (!projectCode) return { error: "ไม่พบ project code" };
    if (!name) return { error: "ไม่พบชื่อโปรเจกต์" };
    if (!normalizedStatus) return { error: "กรุณาเลือกสถานะโปรเจกต์" };
+   if (!PROJECT_KINDS.includes(projectKind as (typeof PROJECT_KINDS)[number])) {
+      return { error: "ประเภทโครงการไม่ถูกต้อง" };
+   }
    if (!allowedStatuses.includes(normalizedStatus)) {
       return { error: `สถานะโปรเจกต์ไม่ถูกต้อง: ${rawStatus}` };
    }
@@ -157,6 +174,7 @@ export async function updateProjectStatusAction(
          },
          body: JSON.stringify({
             name,
+            project_kind: projectKind,
             description,
             status,
             client_person_id: clientPersonId,
@@ -171,6 +189,94 @@ export async function updateProjectStatusAction(
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
          return { error: data.error?.message || "ไม่สามารถเปลี่ยนสถานะโปรเจกต์ได้" };
+      }
+
+      revalidatePath("/workspace/projects");
+      revalidatePath(`/workspace/projects/${projectCode}`);
+      return { success: true };
+   } catch {
+      return { error: "ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่" };
+   }
+}
+
+export async function updateProjectSettingsAction(
+   _prev: ActionState,
+   formData: FormData,
+): Promise<ActionState> {
+   const token = (await cookies()).get("token")?.value;
+   if (!token) return { error: "กรุณาเข้าสู่ระบบ" };
+
+   const projectId = (formData.get("project_id") as string)?.trim();
+   const projectCode = (formData.get("project_code") as string)?.trim();
+   const name = (formData.get("name") as string)?.trim();
+   const rawStatus = (formData.get("status") as string)?.trim();
+   const status = rawStatus?.toLowerCase().replace(/[\s-]+/g, "_");
+   const rawProjectKind = (formData.get("project_kind") as string)?.trim();
+   const projectKind = rawProjectKind || "client_delivery";
+   const contractFinanceVisibility = (formData.get("contract_finance_visibility") as string)?.trim();
+   const expenseFinanceVisibility = (formData.get("expense_finance_visibility") as string)?.trim();
+
+   if (!projectId) return { error: "ไม่พบรหัสโปรเจกต์" };
+   if (!projectCode) return { error: "ไม่พบ project code" };
+   if (!name) return { error: "ไม่พบชื่อโปรเจกต์" };
+   if (!status) return { error: "ไม่พบสถานะโปรเจกต์" };
+   if (!PROJECT_KINDS.includes(projectKind as (typeof PROJECT_KINDS)[number])) {
+      return { error: "ประเภทโครงการไม่ถูกต้อง" };
+   }
+   if (
+      !contractFinanceVisibility ||
+      !FINANCE_VISIBILITIES.includes(
+         contractFinanceVisibility as (typeof FINANCE_VISIBILITIES)[number],
+      )
+   ) {
+      return { error: "สิทธิ์ข้อมูลส่วนว่าจ้างไม่ถูกต้อง" };
+   }
+   if (
+      !expenseFinanceVisibility ||
+      !FINANCE_VISIBILITIES.includes(
+         expenseFinanceVisibility as (typeof FINANCE_VISIBILITIES)[number],
+      )
+   ) {
+      return { error: "สิทธิ์ข้อมูลส่วนค่าใช้จ่ายไม่ถูกต้อง" };
+   }
+
+   const description = (formData.get("description") as string)?.trim() || null;
+   const clientPersonId =
+      (formData.get("client_person_id") as string)?.trim() || null;
+   const clientNameRaw =
+      (formData.get("client_name_raw") as string)?.trim() || null;
+   const clientEmailRaw =
+      (formData.get("client_email_raw") as string)?.trim() || null;
+   const scheduledStartAt =
+      (formData.get("scheduled_start_at") as string)?.trim() || null;
+   const deadlineAt = (formData.get("deadline_at") as string)?.trim() || null;
+
+   try {
+      const res = await fetch(`${API_URL}/projects/${projectId}`, {
+         method: "PUT",
+         headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+         },
+         body: JSON.stringify({
+            name,
+            status,
+            project_kind: projectKind,
+            contract_finance_visibility: contractFinanceVisibility,
+            expense_finance_visibility: expenseFinanceVisibility,
+            description,
+            client_person_id: clientPersonId,
+            client_name_raw: clientNameRaw,
+            client_email_raw: clientEmailRaw,
+            scheduled_start_at: scheduledStartAt,
+            deadline_at: deadlineAt,
+         }),
+         cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+         return { error: data.error?.message || "ไม่สามารถบันทึก Project Settings ได้" };
       }
 
       revalidatePath("/workspace/projects");

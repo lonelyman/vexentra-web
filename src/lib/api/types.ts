@@ -22,6 +22,7 @@ export interface Profile {
    headline: string;
    bio: string;
    location: string;
+   avatar_file_id?: string | null;
    avatar_url: string;
    social_links: SocialLink[];
 }
@@ -63,6 +64,9 @@ export interface PortfolioItem {
    source_url: string;
    status: string;
    featured: boolean;
+   sort_order?: number;
+   started_at?: string | null;
+   ended_at?: string | null;
    tags: PortfolioTag[];
 }
 
@@ -84,6 +88,8 @@ export interface UserListItem {
    role: string;
    status: string;
    is_email_verified: boolean;
+   force_password_change: boolean;
+   password_changed_at: string | null;
    last_login_at: string | null;
    created_at: string;
 }
@@ -94,8 +100,20 @@ export interface UserListResult {
       total_records: number;
       total_pages: number;
       current_page: number;
-      page_size: number;
+      per_page: number;
+      has_more: boolean;
    };
+}
+
+export interface CursorPaginationMeta {
+   next_cursor: string | null;
+   has_more: boolean;
+   limit: number;
+}
+
+export interface UserCursorListResult {
+   items: UserListItem[];
+   pagination: CursorPaginationMeta;
 }
 
 export interface UserMe {
@@ -106,6 +124,8 @@ export interface UserMe {
    role: string;
    status: string;
    is_email_verified: boolean;
+   force_password_change: boolean;
+   password_changed_at: string | null;
    last_login_at: string | null;
    created_at: string;
 }
@@ -117,6 +137,12 @@ export type ProjectStatus =
    | "active"
    | "on_hold"
    | "closed";
+
+export type ProjectKind = "client_delivery" | "internal_continuous";
+export type FinanceVisibility =
+   | "all_members"
+   | "lead_coordinator_staff"
+   | "staff_only";
 
 export type ProjectStatusPhase =
    | "backlog"
@@ -139,6 +165,9 @@ export interface Project {
    project_code: string;
    name: string;
    description: string | null;
+   project_kind: ProjectKind;
+   contract_finance_visibility: FinanceVisibility;
+   expense_finance_visibility: FinanceVisibility;
    status: ProjectStatus;
    client_person_id: string | null;
    client_name_raw: string | null;
@@ -230,12 +259,22 @@ export interface ProjectTotals {
 }
 
 export interface Member {
+   roles: MemberRole[];
    id: string;
    project_id: string;
    person_id: string;
    is_lead: boolean;
    added_by_user_id: string;
    joined_at: string;
+}
+
+export interface MemberRole {
+   assignment_id: string;
+   role_id: string;
+   code: string;
+   name_th: string;
+   name_en: string;
+   is_primary: boolean;
 }
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────

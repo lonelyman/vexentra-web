@@ -57,7 +57,7 @@ export default async function EditPersonPage({
          <div style={{ display: "grid", gap: 24, maxWidth: 680 }}>
             <div className="ws-card">
                <h2 className="ws-card-title">โปรไฟล์</h2>
-               <EditProfileForm userId={user.id} profile={profile} />
+               <EditProfileForm userId={user.id} personId={user.person_id} profile={profile} />
             </div>
 
             <div className="ws-card">

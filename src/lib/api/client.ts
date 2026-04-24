@@ -6,6 +6,7 @@ import type {
    SocialPlatform,
    UserMe,
    UserListResult,
+   UserCursorListResult,
    Project,
    ProjectListResult,
    TransactionCategory,
@@ -25,7 +26,9 @@ const API_URL =
 
 export async function fetchShowcase(): Promise<FullProfileData | null> {
    try {
-      const res = await fetch(`${API_URL}/showcase`, { cache: "no-store" });
+      const res = await fetch(`${API_URL}/showcase`, {
+         next: { revalidate: 60 },
+      });
       if (!res.ok) {
          if (res.status === 404) return null;
          throw new Error(`Failed to fetch showcase: ${res.status}`);
@@ -38,10 +41,29 @@ export async function fetchShowcase(): Promise<FullProfileData | null> {
    }
 }
 
+export async function fetchShowcaseByPersonID(
+   personID: string,
+): Promise<FullProfileData | null> {
+   try {
+      const res = await fetch(`${API_URL}/showcase/${encodeURIComponent(personID)}`, {
+         next: { revalidate: 60 },
+      });
+      if (!res.ok) {
+         if (res.status === 404) return null;
+         throw new Error(`Failed to fetch showcase by person id: ${res.status}`);
+      }
+      const json = await res.json();
+      return json.data ?? null;
+   } catch (error) {
+      console.error("API Error:", error);
+      return null;
+   }
+}
+
 export async function fetchSocialPlatforms(): Promise<SocialPlatform[]> {
    try {
       const res = await fetch(`${API_URL}/social-platforms`, {
-         cache: "no-store",
+         next: { revalidate: 300 },
       });
       if (!res.ok) {
          throw new Error(`Failed to fetch social platforms: ${res.status}`);
@@ -90,6 +112,7 @@ export async function fetchProjects(
       limit?: number;
       search?: string;
       status?: string;
+      project_kind?: string;
    },
 ): Promise<{ data: ProjectListResult | null; status: number }> {
    const url = new URL(`${INTERNAL_URL}/projects`);
@@ -97,6 +120,7 @@ export async function fetchProjects(
    if (params?.limit) url.searchParams.set("limit", String(params.limit));
    if (params?.search) url.searchParams.set("search", params.search);
    if (params?.status) url.searchParams.set("status", params.status);
+   if (params?.project_kind) url.searchParams.set("project_kind", params.project_kind);
 
    const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
@@ -215,11 +239,32 @@ export async function fetchDashboardStats(
 
 export async function fetchUsers(
    token: string,
-   params?: { page?: number; limit?: number },
+   params?: { page?: number; limit?: number; search?: string; status?: string },
 ): Promise<{ data: UserListResult | null; status: number }> {
    const url = new URL(`${INTERNAL_URL}/users`);
    if (params?.page) url.searchParams.set("page", String(params.page));
    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+   if (params?.search) url.searchParams.set("search", params.search);
+   if (params?.status) url.searchParams.set("status", params.status);
+
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchUsersCursor(
+   token: string,
+   params?: { cursor?: string; limit?: number; search?: string; status?: string },
+): Promise<{ data: UserCursorListResult | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/users`);
+   if (params?.cursor !== undefined) url.searchParams.set("cursor", params.cursor);
+   if (params?.limit) url.searchParams.set("limit", String(params.limit));
+   if (params?.search) url.searchParams.set("search", params.search);
+   if (params?.status) url.searchParams.set("status", params.status);
 
    const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },

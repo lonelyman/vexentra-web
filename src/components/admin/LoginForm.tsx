@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { loginAction } from "@/app/actions/auth";
 
@@ -11,8 +12,12 @@ export default function LoginForm() {
 
    return (
       <div className="login-card">
-         <h2 className="login-title">Admin Login</h2>
-         <p className="login-subtitle">เข้าสู่ระบบเพื่อจัดการ Portfolio</p>
+         <h2 className="login-title">
+            <span className="login-brand-vex">Vex</span>
+            <span className="login-brand-entra">entra</span>{" "}
+            <span className="login-brand-workspace">Workspace</span>
+         </h2>
+         <p className="login-subtitle">เข้าสู่ระบบเพื่อใช้งานระบบจัดการงานและทีม</p>
 
          {state?.error && <div className="login-error">{state.error}</div>}
 
@@ -108,6 +113,17 @@ export default function LoginForm() {
                   </button>
                </div>
             </div>
+
+            <div className="login-links">
+               <Link href="/forgot-password" className="login-link-inline">
+                  ลืมรหัสผ่าน?
+               </Link>
+            </div>
+
+            <label className="login-remember">
+               <input type="checkbox" name="remember_login" />
+               <span>จำการเข้าสู่ระบบ 7 วัน</span>
+            </label>
 
             <button
                type="submit"
