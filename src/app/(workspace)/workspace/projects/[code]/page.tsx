@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
 import {
@@ -160,6 +160,20 @@ export default async function ProjectDetailPage({
    const canReadExpenseFinance = canReadByVisibility(
       project.expense_finance_visibility,
    );
+   const currentProjectRoleLabel = isStaff
+      ? "Staff (Admin/Manager)"
+      : isLead
+        ? "Lead"
+        : isCoordinator
+          ? "Coordinator"
+          : "Member";
+   const visibleTabs = canReadContractFinance
+      ? TABS
+      : TABS.filter((t) => t.id !== "financial_plan");
+
+   if (tab === "financial_plan" && !canReadContractFinance) {
+      redirect(`/workspace/projects/${code}?tab=overview`);
+   }
 
    function tabUrl(t: Tab) {
       return `/workspace/projects/${code}?tab=${t}`;
@@ -204,7 +218,7 @@ export default async function ProjectDetailPage({
             </div>
 
             <nav className="ws-tabs">
-               {TABS.map((t) => (
+               {visibleTabs.map((t) => (
                   <Link
                      key={t.id}
                      href={tabUrl(t.id)}
@@ -364,7 +378,7 @@ export default async function ProjectDetailPage({
             </div>
 
             <nav className="ws-tabs">
-               {TABS.map((t) => (
+               {visibleTabs.map((t) => (
                   <Link
                      key={t.id}
                      href={tabUrl(t.id)}
@@ -459,7 +473,7 @@ export default async function ProjectDetailPage({
             </div>
 
             <nav className="ws-tabs">
-               {TABS.map((t) => (
+               {visibleTabs.map((t) => (
                   <Link
                      key={t.id}
                      href={tabUrl(t.id)}
@@ -727,7 +741,7 @@ export default async function ProjectDetailPage({
                </div>
             </div>
             <nav className="ws-tabs">
-               {TABS.map((t) => (
+               {visibleTabs.map((t) => (
                   <Link
                      key={t.id}
                      href={tabUrl(t.id)}
@@ -824,7 +838,7 @@ export default async function ProjectDetailPage({
             </div>
 
             <nav className="ws-tabs">
-               {TABS.map((t) => (
+               {visibleTabs.map((t) => (
                   <Link
                      key={t.id}
                      href={tabUrl(t.id)}
@@ -845,6 +859,7 @@ export default async function ProjectDetailPage({
             <ProjectSettingsForm
                project={project}
                canEdit={canManageWhenOpen}
+               currentRoleLabel={currentProjectRoleLabel}
             />
          </main>
       );
@@ -924,7 +939,7 @@ export default async function ProjectDetailPage({
          </div>
 
          <nav className="ws-tabs">
-            {TABS.map((t) => (
+            {visibleTabs.map((t) => (
                <Link
                   key={t.id}
                   href={tabUrl(t.id)}

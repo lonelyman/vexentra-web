@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { fetchProjectStatuses, fetchProjects } from "@/lib/api/client";
 import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
 import type { Project, ProjectStatus, ProjectStatusMeta } from "@/lib/api/types";
 import CreateProjectButton from "@/components/workspace/CreateProjectButton";
+import Pagination from "@/components/workspace/Pagination";
 import {
    buildProjectStatusLabelMap,
    FALLBACK_PROJECT_STATUSES,
@@ -36,6 +38,7 @@ function formatDate(iso: string | null): string {
 
 interface SearchParams {
    page?: string;
+   limit?: string;
    search?: string;
    status?: string;
    project_kind?: string;
@@ -51,8 +54,10 @@ export default async function ProjectsPage({
    const page = Math.max(1, Number(params.page) || 1);
    const search = params.search?.trim() || "";
    const status = params.status || "";
-    const projectKind = params.project_kind || "";
-   const limit = 15;
+   const projectKind = params.project_kind || "";
+   const validLimits = [10, 20, 50, 100, 200, 500];
+   const DEFAULT_LIMIT = 20;
+   const limit = validLimits.includes(Number(params.limit)) ? Number(params.limit) : DEFAULT_LIMIT;
 
    const [projectsResult, statusesResult] = await Promise.all([
       fetchProjects(token, {
@@ -89,18 +94,16 @@ export default async function ProjectsPage({
 
    const { items, pagination } = data;
    const totalPages = pagination.total_pages || 1;
-   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-   // Build URL helper for filter/pagination links
-   function buildUrl(overrides: Partial<SearchParams>) {
+   if (page > totalPages) {
       const p = new URLSearchParams();
-      const merged = { page: String(page), search, status, project_kind: projectKind, ...overrides };
-      if (merged.search) p.set("search", merged.search);
-      if (merged.status) p.set("status", merged.status);
-      if (merged.project_kind) p.set("project_kind", merged.project_kind);
-      if (Number(merged.page) > 1) p.set("page", merged.page!);
+      if (search) p.set("search", search);
+      if (status) p.set("status", status);
+      if (projectKind) p.set("project_kind", projectKind);
+      if (limit !== DEFAULT_LIMIT) p.set("limit", String(limit));
+      if (totalPages > 1) p.set("page", String(totalPages));
       const qs = p.toString();
-      return `/workspace/projects${qs ? `?${qs}` : ""}`;
+      redirect(`/workspace/projects${qs ? `?${qs}` : ""}`);
    }
 
    return (
@@ -175,20 +178,25 @@ export default async function ProjectsPage({
                </div>
             ) : (
                <>
+                  <div className="ws-table-scroll">
                   <table className="ws-table">
                      <thead>
                         <tr>
+                           <th style={{ width: 48, textAlign: "center" }}>ลำดับ</th>
                            <th>รหัส</th>
                            <th>ชื่อโปรเจกต์</th>
                            <th>ประเภท</th>
                            <th>สถานะ</th>
-                           <th>สร้างเมื่อ</th>
-                           <th>อัปเดตล่าสุด</th>
+                           <th style={{ minWidth: 130 }}>สร้างเมื่อ</th>
+                           <th style={{ minWidth: 130 }}>อัปเดตล่าสุด</th>
                         </tr>
                      </thead>
                      <tbody>
-                        {items.map((p: Project) => (
+                        {items.map((p: Project, idx: number) => (
                            <tr key={p.id}>
+                              <td style={{ textAlign: "center", color: "var(--text-dim)", fontSize: 13 }}>
+                                 {(page - 1) * limit + idx + 1}
+                              </td>
                               <td>
                                  <Link
                                     href={`/workspace/projects/${p.project_code.toLowerCase()}`}
@@ -247,69 +255,17 @@ export default async function ProjectsPage({
                         ))}
                      </tbody>
                   </table>
-
-                  <div className="ws-pagination">
-                     <span>
-                        {pagination.total_records} โปรเจกต์ · หน้า {page} /{" "}
-                        {totalPages}
-                     </span>
-                     <div className="ws-pagination-links">
-                        <Link
-                           href={buildUrl({ page: String(page - 1) })}
-                           className="ws-pagination-link"
-                           aria-disabled={page <= 1 ? "true" : undefined}
-                        >
-                           <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              style={{ width: 14, height: 14 }}
-                           >
-                              <path
-                                 fillRule="evenodd"
-                                 d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
-                                 clipRule="evenodd"
-                              />
-                           </svg>
-                        </Link>
-                        {pageNumbers.map((p) => (
-                           <Link
-                              key={p}
-                              href={buildUrl({ page: String(p) })}
-                              className="ws-pagination-link"
-                              style={
-                                 p === page
-                                    ? {
-                                         background: "var(--accent)",
-                                         color: "#fff",
-                                         borderColor: "var(--accent)",
-                                      }
-                                    : undefined
-                              }
-                           >
-                              {p}
-                           </Link>
-                        ))}
-                        <Link
-                           href={buildUrl({ page: String(page + 1) })}
-                           className="ws-pagination-link"
-                           aria-disabled={page >= totalPages ? "true" : undefined}
-                        >
-                           <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              style={{ width: 14, height: 14 }}
-                           >
-                              <path
-                                 fillRule="evenodd"
-                                 d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-                                 clipRule="evenodd"
-                              />
-                           </svg>
-                        </Link>
-                     </div>
                   </div>
+
+                  <Pagination
+                     page={page}
+                     limit={limit}
+                     totalPages={totalPages}
+                     totalRecords={pagination.total_records}
+                     unit="โปรเจกต์"
+                     basePath="/workspace/projects"
+                     extraParams={{ search, status, project_kind: projectKind }}
+                  />
                </>
             )}
          </div>

@@ -17,9 +17,14 @@ const VISIBILITY_OPTIONS: Array<{ value: FinanceVisibility; label: string }> = [
 interface Props {
    project: Project;
    canEdit: boolean;
+   currentRoleLabel: string;
 }
 
-export default function ProjectSettingsForm({ project, canEdit }: Props) {
+export default function ProjectSettingsForm({
+   project,
+   canEdit,
+   currentRoleLabel,
+}: Props) {
    const router = useRouter();
    const [state, action, pending] = useActionState(
       updateProjectSettingsAction,
@@ -44,6 +49,20 @@ export default function ProjectSettingsForm({ project, canEdit }: Props) {
          <input type="hidden" name="client_email_raw" value={project.client_email_raw ?? ""} />
          <input type="hidden" name="scheduled_start_at" value={project.scheduled_start_at ?? ""} />
          <input type="hidden" name="deadline_at" value={project.deadline_at ?? ""} />
+
+         <div
+            style={{
+               display: "flex",
+               alignItems: "center",
+               gap: 8,
+               marginBottom: 14,
+            }}
+         >
+            <span className="ws-form-label" style={{ margin: 0 }}>
+               สิทธิ์ปัจจุบัน:
+            </span>
+            <span className="ws-badge ws-badge-planned">{currentRoleLabel}</span>
+         </div>
 
          <div className="ws-form-group">
             <label className="ws-form-label ws-form-label--required" htmlFor="contract-fin-visibility">
