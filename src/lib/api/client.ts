@@ -7,6 +7,8 @@ import type {
    UserMe,
    UserListResult,
    UserCursorListResult,
+   UserRoleMeta,
+   UserStatusMeta,
    Project,
    ProjectListResult,
    TransactionCategory,
@@ -273,6 +275,40 @@ export async function fetchUsersCursor(
    if (!res.ok) return { data: null, status: res.status };
    const json = await res.json();
    return { data: json.data ?? null, status: res.status };
+}
+
+export async function fetchUserRoles(
+   token: string,
+   params?: { activeOnly?: boolean },
+): Promise<{ data: UserRoleMeta[] | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/user-roles`);
+   if (params?.activeOnly !== undefined) {
+      url.searchParams.set("active_only", String(params.activeOnly));
+   }
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data?.items ?? json.data ?? null, status: res.status };
+}
+
+export async function fetchUserStatuses(
+   token: string,
+   params?: { activeOnly?: boolean },
+): Promise<{ data: UserStatusMeta[] | null; status: number }> {
+   const url = new URL(`${INTERNAL_URL}/user-statuses`);
+   if (params?.activeOnly !== undefined) {
+      url.searchParams.set("active_only", String(params.activeOnly));
+   }
+   const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+   });
+   if (!res.ok) return { data: null, status: res.status };
+   const json = await res.json();
+   return { data: json.data?.items ?? json.data ?? null, status: res.status };
 }
 
 export async function fetchUserById(

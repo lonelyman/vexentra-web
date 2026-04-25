@@ -130,6 +130,22 @@ export interface UserMe {
    created_at: string;
 }
 
+export interface UserRoleMeta {
+   code: string;
+   label_th: string;
+   label_en: string;
+   sort_order: number;
+   is_active: boolean;
+}
+
+export interface UserStatusMeta {
+   code: string;
+   label_th: string;
+   label_en: string;
+   sort_order: number;
+   is_active: boolean;
+}
+
 export type ProjectStatus =
    | "draft"
    | "planned"

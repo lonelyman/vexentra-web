@@ -1,5 +1,5 @@
 import { requireAuth, handleAuthError } from "@/lib/auth/requireAuth";
-import { fetchUsers, fetchMe } from "@/lib/api/client";
+import { fetchUsers, fetchMe, fetchUserRoles, fetchUserStatuses } from "@/lib/api/client";
 import { redirect } from "next/navigation";
 import type { UserListItem } from "@/lib/api/types";
 import Link from "next/link";
@@ -19,12 +19,6 @@ function formatDate(iso: string | null): string {
    });
 }
 
-const STATUS_LABEL: Record<string, string> = {
-   active: "ใช้งาน",
-   inactive: "ระงับ",
-   pending: "รอยืนยัน",
-};
-
 const validLimits = [10, 20, 50, 100, 200, 500];
 const DEFAULT_LIMIT = 20;
 
@@ -43,8 +37,19 @@ export default async function PersonsPage({
    const page = Math.max(1, Number(sp.page) || 1);
    const limit = validLimits.includes(Number(sp.limit)) ? Number(sp.limit) : DEFAULT_LIMIT;
 
-   const { data, status } = await fetchUsers(token, { page, limit });
+   const [usersResult, rolesResult, statusesResult] = await Promise.all([
+      fetchUsers(token, { page, limit }),
+      fetchUserRoles(token, { activeOnly: true }),
+      fetchUserStatuses(token, { activeOnly: true }),
+   ]);
+   const { data, status } = usersResult;
    if (!data) handleAuthError(status, "/workspace/persons");
+   const roleLabelMap = new Map(
+      (rolesResult.data ?? []).map((r) => [r.code, r.label_th || r.label_en || r.code]),
+   );
+   const statusLabelMap = new Map(
+      (statusesResult.data ?? []).map((s) => [s.code, s.label_th || s.label_en || s.code]),
+   );
 
    const { items, pagination } = data!;
    const totalPages = pagination.total_pages || 1;
@@ -69,7 +74,7 @@ export default async function PersonsPage({
                </h1>
                <p className="ws-page-subtitle">รายชื่อผู้ใช้งานทั้งหมดในระบบ</p>
             </div>
-            <CreateUserModal />
+            <CreateUserModal roles={rolesResult.data ?? []} />
          </div>
 
          <div className="ws-table-wrap">
@@ -117,12 +122,12 @@ export default async function PersonsPage({
                                        background: u.role === "admin" ? "rgba(59,130,246,0.1)" : u.role === "manager" ? "rgba(251,191,36,0.1)" : "var(--bg3)",
                                     }}
                                  >
-                                    {u.role}
+                                    {roleLabelMap.get(u.role) ?? u.role}
                                  </span>
                               </td>
                               <td>
-                                 <span className={`ws-badge ${u.status === "active" ? "ws-badge-active" : u.status === "inactive" ? "ws-badge-closed" : "ws-badge-planned"}`}>
-                                    {STATUS_LABEL[u.status] ?? u.status}
+                                 <span className={`ws-badge ${u.status === "active" ? "ws-badge-active" : u.status === "banned" ? "ws-badge-closed" : "ws-badge-planned"}`}>
+                                    {statusLabelMap.get(u.status) ?? u.status}
                                  </span>
                               </td>
                               <td>

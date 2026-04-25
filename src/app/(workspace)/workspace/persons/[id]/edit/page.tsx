@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/auth/requireAuth";
-import { fetchMe, fetchUserById, fetchPersonProfile } from "@/lib/api/client";
+import { fetchMe, fetchUserById, fetchPersonProfile, fetchUserRoles, fetchUserStatuses } from "@/lib/api/client";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import EditAccountForm from "./EditAccountForm";
@@ -29,7 +29,12 @@ export default async function EditPersonPage({
       redirect("/workspace/persons");
    }
 
-   const { data: fullProfile } = await fetchPersonProfile(token, user.person_id);
+   const [profileResult, rolesResult, statusesResult] = await Promise.all([
+      fetchPersonProfile(token, user.person_id),
+      fetchUserRoles(token, { activeOnly: true }),
+      fetchUserStatuses(token, { activeOnly: true }),
+   ]);
+   const fullProfile = profileResult.data;
    const profile = fullProfile?.profile ?? null;
    const skills = fullProfile?.skills ?? [];
    const experiences = fullProfile?.experiences ?? [];
@@ -62,7 +67,11 @@ export default async function EditPersonPage({
 
             <div className="ws-card">
                <h2 className="ws-card-title">บัญชีผู้ใช้</h2>
-               <EditAccountForm user={user} />
+               <EditAccountForm
+                  user={user}
+                  roles={rolesResult.data ?? []}
+                  statuses={statusesResult.data ?? []}
+               />
             </div>
 
             <div className="ws-card">

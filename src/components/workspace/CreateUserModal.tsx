@@ -3,11 +3,18 @@
 import { useRef, useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { adminCreateUserAction } from "@/app/actions/users";
+import type { UserRoleMeta } from "@/lib/api/types";
 
 type ActionState = { error?: string; success?: boolean };
 const init: ActionState = {};
 
-export default function CreateUserModal() {
+const FALLBACK_ROLES: UserRoleMeta[] = [
+   { code: "member", label_th: "สมาชิก", label_en: "Member", sort_order: 30, is_active: true },
+   { code: "manager", label_th: "ผู้จัดการ", label_en: "Manager", sort_order: 20, is_active: true },
+   { code: "admin", label_th: "ผู้ดูแลระบบ", label_en: "Administrator", sort_order: 10, is_active: true },
+];
+
+export default function CreateUserModal({ roles }: { roles?: UserRoleMeta[] }) {
    const router = useRouter();
    const backdropRef = useRef<HTMLDivElement>(null);
    const formRef = useRef<HTMLFormElement>(null);
@@ -23,6 +30,8 @@ export default function CreateUserModal() {
 
    const open = () => backdropRef.current?.classList.add("open");
    const close = () => backdropRef.current?.classList.remove("open");
+
+   const roleItems = (roles && roles.length > 0 ? roles : FALLBACK_ROLES).filter((r) => r.is_active);
 
    return (
       <>
@@ -76,9 +85,11 @@ export default function CreateUserModal() {
                   <div className="ws-form-group">
                      <label className="ws-form-label">Role</label>
                      <select name="role" className="ws-form-select" defaultValue="member">
-                        <option value="member">member — ผู้ใช้ทั่วไป</option>
-                        <option value="manager">manager — หัวหน้าทีม</option>
-                        <option value="admin">admin — เจ้าของระบบ</option>
+                        {roleItems.map((r) => (
+                           <option key={r.code} value={r.code}>
+                              {r.code} — {r.label_th || r.label_en}
+                           </option>
+                        ))}
                      </select>
                   </div>
 
